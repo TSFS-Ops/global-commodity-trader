@@ -1,7 +1,10 @@
-const path = require('path');
-const fs = require('fs');
-const pLimitModule = require('p-limit');
-const pLimit = pLimitModule.default || pLimitModule;
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import pLimit from 'p-limit';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const DEFAULT_TIMEOUT = parseInt(process.env.CRAWLER_DEFAULT_TIMEOUT_MS || '3000', 10);
 const CACHE_TTL_MS = parseInt(process.env.CACHE_TTL_MS || '60000', 10);
@@ -21,7 +24,7 @@ function cacheSet(key, value) {
   cache.set(key, { ts: Date.now(), value });
 }
 
-function loadConnectors() {
+async function loadConnectors() {
   const connectors = {};
   if (!fs.existsSync(CONNECTORS_DIR)) return connectors;
   const files = fs.readdirSync(CONNECTORS_DIR);
@@ -29,7 +32,8 @@ function loadConnectors() {
     if (!f.endsWith('.js')) continue;
     const modulePath = path.join(CONNECTORS_DIR, f);
     try {
-      const mod = require(modulePath);
+      const moduleObj = await import(modulePath);
+      const mod = moduleObj.default || moduleObj;
       if (mod && mod.name && typeof mod.fetchAndNormalize === 'function') {
         connectors[mod.name] = mod;
       } else {
@@ -69,7 +73,7 @@ async function fetchFromConnectors({ connectors = {}, criteria = {}, options = {
   const concurrency = options.concurrency ?? 5;
   const noCache = !!options.noCache;
 
-  const availableConnectors = loadConnectors();
+  const availableConnectors = await loadConnectors();
   const tasks = [];
   for (const [name, token] of Object.entries(connectors)) {
     const connector = availableConnectors[name];
@@ -114,4 +118,4 @@ async function fetchFromConnectors({ connectors = {}, criteria = {}, options = {
   return { meta, results: all };
 }
 
-module.exports = { fetchFromConnectors };
+export { fetchFromConnectors };

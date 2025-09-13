@@ -1,131 +1,305 @@
-import express, { type Request, Response, NextFunction } from "express";
+/**
+ * External Data Connectors Module
+ * Week 6 Implementation: Mock External APIs and Crawler Prototype
+ * 
+ * This module provides a framework for connecting to external data sources,
+ * normalizing their data into a unified format, and supporting the matching engine
+ * with diverse data inputs from multiple partners and suppliers.
+ */
 
-// Load environment variables first
-import 'dotenv/config';
+// Simple logging function for external connectors
+const log = (message: string, service: string) => {
+  console.log(`[${new Date().toISOString()}] ${service}: ${message}`);
+};
 
-const app = express();
+// Unified data format that all external sources must be normalized to
+export interface UnifiedListingData {
+  id: string;
+  sourceId: string;
+  sourceName: string;
+  title: string;
+  description: string;
+  category: 'hemp' | 'cannabis' | 'extract' | 'seed' | 'carbon_credit' | 'other';
+  quantity: number;
+  unit: string;
+  pricePerUnit: number;
+  currency: string;
+  location: string;
+  latitude?: number;
+  longitude?: number;
+  minOrderQuantity?: number;
+  qualityGrade?: string;
+  certifications?: string[];
+  socialImpactScore?: number;
+  socialImpactCategory?: string;
+  contactInfo: {
+    company: string;
+    email?: string;
+    phone?: string;
+  };
+  lastUpdated: Date;
+}
 
-// CRITICAL: Set up immediate health check endpoints BEFORE any middleware or imports
-// This ensures health checks work even if other parts of the app are still initializing
-app.get("/health", (req, res) => {
-  res.status(200).json({ 
-    status: "healthy", 
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime() 
-  });
-});
-
-// Alternative health check endpoint that just returns OK for simple checks
-app.get("/api/health", (req, res) => {
-  res.status(200).send('OK');
-});
-
-// Add a temporary root handler until Vite is set up
-let frontendReady = false;
-app.get('/', (req, res, next) => {
-  if (!frontendReady) {
-    res.status(200).send('OK'); // Ensure health check succeeds quickly
-    return;
+// Abstract base class for all external connectors
+export abstract class ExternalConnector {
+  protected sourceName: string;
+  protected baseUrl: string;
+  protected credentials?: any;
+  
+  constructor(sourceName: string, baseUrl: string, credentials?: any) {
+    this.sourceName = sourceName;
+    this.baseUrl = baseUrl;
+    this.credentials = credentials;
   }
-  next();
-});
 
-// Start server immediately to enable health checks
-import { createServer } from "http";
-const server = createServer(app);
+  // Each connector must implement these methods
+  abstract connect(): Promise<boolean>;
+  abstract fetchListings(filters?: any): Promise<any[]>;
+  abstract normalizeData(rawData: any[]): Promise<UnifiedListingData[]>;
+  
+  // Common method to get normalized listings
+  async getUnifiedListings(filters?: any): Promise<UnifiedListingData[]> {
+    try {
+      const connected = await this.connect();
+      if (!connected) {
+        throw new Error(`Failed to connect to ${this.sourceName}`);
+      }
+      
+      const rawData = await this.fetchListings(filters);
+      const normalizedData = await this.normalizeData(rawData);
+      
+      log(`Successfully fetched ${normalizedData.length} listings from ${this.sourceName}`, "crawler");
+      return normalizedData;
+    } catch (error) {
+      log(`Error fetching from ${this.sourceName}: ${error}`, "crawler");
+      return [];
+    }
+  }
+}
 
-// Use environment PORT or default to 5000
-const port = process.env.PORT || 5000;
-server.listen(port, "0.0.0.0", () => {
-  console.log(`Server listening on port ${port} - health checks available`);
-});
+// Mock Hemp Supplier Connector (Simulates external hemp supplier API)
+export class MockHempSupplierConnector extends ExternalConnector {
+  constructor() {
+    super("Hemp Suppliers Network", "https://api.hemp-suppliers.co.za", { apiKey: "mock-key" });
+  }
 
-// Now import and set up everything else asynchronously
-// This ensures health checks respond immediately while expensive operations happen in background
-(async () => {
-  try {
-    // Import dependencies only after server is running
-    const cors = await import("cors");
-    const cookieParser = await import("cookie-parser");
-    const { setupVite, serveStatic, log } = await import("./vite");
-    const { registerRoutes } = await import("./routes");
-    const { setupWebsocket } = await import("./websocket");
-    const crawlerRouter = (await import('./crawler-routes')).default;
-    
-    log("Starting application initialization...");
-    
-    // Set up middleware
-    app.use(express.json());
-    app.use(express.urlencoded({ extended: false }));
-    app.use(cookieParser.default());
-    app.use(cors.default({
-      origin: true,
-      credentials: true
+  async connect(): Promise<boolean> {
+    // Simulate connection check
+    return true;
+  }
+
+  async fetchListings(filters?: any): Promise<any[]> {
+    // Mock data from external hemp supplier
+    return [
+      {
+        product_id: "HS001",
+        name: "Organic Hemp Flower - Premium Grade",
+        desc: "High-quality hemp flowers from sustainable farms",
+        type: "flower",
+        qty: 200,
+        unit_type: "kg",
+        price_per_unit: 145.50,
+        currency_code: "USD",
+        supplier_location: "Western Cape, South Africa",
+        coordinates: { lat: -33.9249, lng: 18.4241 },
+        min_order: 10,
+        quality_cert: "Organic",
+        impact_score: 85,
+        impact_type: "Environmental",
+        vendor: {
+          company_name: "Green Valley Hemp Co",
+          contact_email: "orders@greenvalley.co.za",
+          phone: "+27-21-555-0123"
+        },
+        updated_at: "2024-12-08T10:00:00Z"
+      },
+      {
+        product_id: "HS002", 
+        name: "Hemp Seeds for Cultivation",
+        desc: "Certified hemp seeds with high germination rate",
+        type: "seeds",
+        qty: 150,
+        unit_type: "kg",
+        price_per_unit: 220.00,
+        currency_code: "USD",
+        supplier_location: "Eastern Cape, South Africa",
+        coordinates: { lat: -32.2968, lng: 26.4194 },
+        min_order: 5,
+        quality_cert: "Certified",
+        impact_score: 78,
+        impact_type: "Job Creation",
+        vendor: {
+          company_name: "Coastal Seeds Ltd",
+          contact_email: "info@coastalseeds.co.za"
+        },
+        updated_at: "2024-12-08T09:30:00Z"
+      }
+    ];
+  }
+
+  async normalizeData(rawData: any[]): Promise<UnifiedListingData[]> {
+    return rawData.map(item => ({
+      id: item.product_id,
+      sourceId: "hemp-suppliers-network",
+      sourceName: this.sourceName,
+      title: item.name,
+      description: item.desc,
+      category: item.type === 'flower' ? 'hemp' : 'seed' as any,
+      quantity: item.qty,
+      unit: item.unit_type,
+      pricePerUnit: item.price_per_unit,
+      currency: item.currency_code,
+      location: item.supplier_location,
+      latitude: item.coordinates?.lat,
+      longitude: item.coordinates?.lng,
+      minOrderQuantity: item.min_order,
+      qualityGrade: item.quality_cert,
+      certifications: item.quality_cert ? [item.quality_cert] : [],
+      socialImpactScore: item.impact_score,
+      socialImpactCategory: item.impact_type,
+      contactInfo: {
+        company: item.vendor.company_name,
+        email: item.vendor.contact_email,
+        phone: item.vendor.phone
+      },
+      lastUpdated: new Date(item.updated_at)
     }));
+  }
+}
+
+// Mock Cannabis Trading Platform Connector
+export class MockCannabisExchangeConnector extends ExternalConnector {
+  constructor() {
+    super("SA Cannabis Exchange", "https://api.sa-cannabis-exchange.com", { token: "mock-token" });
+  }
+
+  async connect(): Promise<boolean> {
+    return true;
+  }
+
+  async fetchListings(filters?: any): Promise<any[]> {
+    return [
+      {
+        listing_id: "SCE-001",
+        product_title: "Premium Cannabis Extract - Full Spectrum",
+        product_description: "High-quality full-spectrum cannabis extract for medical use",
+        category: "extract",
+        available_quantity: 50,
+        unit_measurement: "liters",
+        unit_price: 580.00,
+        currency: "USD",
+        seller_region: "Gauteng, South Africa",
+        geo_coordinates: [-26.2041, 28.0473],
+        minimum_purchase: 2,
+        grade: "Premium",
+        sustainability_score: 92,
+        sustainability_focus: "Healthcare",
+        seller_details: {
+          business_name: "Medical Cannabis Solutions",
+          email_contact: "sales@medcannabis.co.za",
+          phone_number: "+27-11-555-0456"
+        },
+        last_modified: "2024-12-08T11:15:00Z"
+      }
+    ];
+  }
+
+  async normalizeData(rawData: any[]): Promise<UnifiedListingData[]> {
+    return rawData.map(item => ({
+      id: item.listing_id,
+      sourceId: "sa-cannabis-exchange",
+      sourceName: this.sourceName,
+      title: item.product_title,
+      description: item.product_description,
+      category: item.category as any,
+      quantity: item.available_quantity,
+      unit: item.unit_measurement,
+      pricePerUnit: item.unit_price,
+      currency: item.currency,
+      location: item.seller_region,
+      latitude: item.geo_coordinates?.[0],
+      longitude: item.geo_coordinates?.[1],
+      minOrderQuantity: item.minimum_purchase,
+      qualityGrade: item.grade,
+      socialImpactScore: item.sustainability_score,
+      socialImpactCategory: item.sustainability_focus,
+      contactInfo: {
+        company: item.seller_details.business_name,
+        email: item.seller_details.email_contact,
+        phone: item.seller_details.phone_number
+      },
+      lastUpdated: new Date(item.last_modified)
+    }));
+  }
+}
+
+// Crawler Service that aggregates data from multiple connectors
+export class DataCrawlerService {
+  private connectors: ExternalConnector[] = [];
+  private lastCrawlTime?: Date;
+
+  constructor() {
+    // Mock connectors disabled for clean testing environment
+    // Users requested to remove all placeholder/mock data for real data testing
+    this.connectors = [];
+  }
+
+  // Add a new connector
+  addConnector(connector: ExternalConnector): void {
+    this.connectors.push(connector);
+  }
+
+  // Crawl all connected sources and return unified data
+  async crawlAllSources(filters?: any): Promise<UnifiedListingData[]> {
+    log(`Starting data crawl from ${this.connectors.length} sources`, "crawler");
     
-    // Add crawler router
-    app.use('/api/crawler', crawlerRouter);
-
-    // Add request logging middleware
-    app.use((req, res, next) => {
-      const start = Date.now();
-      const path = req.path;
-      let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-      const originalResJson = res.json;
-      res.json = function (bodyJson, ...args) {
-        capturedJsonResponse = bodyJson;
-        return originalResJson.apply(res, [bodyJson, ...args]);
-      };
-
-      res.on("finish", () => {
-        const duration = Date.now() - start;
-        if (path.startsWith("/api")) {
-          let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-          if (capturedJsonResponse) {
-            logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-          }
-
-          if (logLine.length > 80) {
-            logLine = logLine.slice(0, 79) + "…";
-          }
-
-          log(logLine);
+    const allListings: UnifiedListingData[] = [];
+    
+    // Fetch from all connectors in parallel
+    const crawlPromises = this.connectors.map(connector => 
+      connector.getUnifiedListings(filters)
+    );
+    
+    try {
+      const results = await Promise.allSettled(crawlPromises);
+      
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          allListings.push(...result.value);
+        } else {
+          log(`Crawler ${index} failed: ${result.reason}`, "crawler");
         }
       });
+      
+      this.lastCrawlTime = new Date();
+      log(`Crawl completed. Total listings: ${allListings.length}`, "crawler");
+      
+      return allListings;
+    } catch (error) {
+      log(`Crawl error: ${error}`, "crawler");
+      return [];
+    }
+  }
 
-      next();
-    });
-    
-    // Setup WebSocket server
-    setupWebsocket(server);
-    
-    log("Registering application routes...");
-    // Register main application routes
-    await registerRoutes(app);
-    
-    // Add error handler
-    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-      const status = err.status || err.statusCode || 500;
-      const message = err.message || "Internal Server Error";
-      res.status(status).json({ message });
-      throw err;
-    });
-
-    log("Setting up static file serving...");
-    // Setup Vite or static serving after routes are registered
-    if (process.env.NODE_ENV === "development") {
-      await setupVite(app, server);
-    } else {
-      serveStatic(app);
+  // Get listings from specific source
+  async crawlSource(sourceName: string, filters?: any): Promise<UnifiedListingData[]> {
+    const connector = this.connectors.find(c => c['sourceName'] === sourceName);
+    if (!connector) {
+      throw new Error(`Source ${sourceName} not found`);
     }
     
-    // Mark frontend as ready
-    frontendReady = true;
-    
-    log(`Application fully initialized and ready to serve requests`);
-  } catch (error) {
-    console.error(`Error during application initialization: ${error}`);
-    // Don't exit the process - health checks should still work
+    return connector.getUnifiedListings(filters);
   }
-})();
+
+  // Get crawl status
+  getStatus() {
+    return {
+      connectorCount: this.connectors.length,
+      connectorSources: this.connectors.map(c => c['sourceName']),
+      lastCrawlTime: this.lastCrawlTime
+    };
+  }
+}
+
+// Export singleton instance
+export const dataCrawler = new DataCrawlerService();

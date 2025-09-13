@@ -1,11 +1,12 @@
-const express = require('express');
+import express from 'express';
+import { fetchFromConnectors } from '../services/crawlerService.js';
+
 const router = express.Router();
-const crawlerService = require('../services/crawlerService');
 
 router.post('/search', async (req, res) => {
   try {
     const { criteria = {}, connectors = {}, options = {} } = req.body;
-    const response = await crawlerService.fetchFromConnectors({
+    const response = await fetchFromConnectors({
       connectors,
       criteria,
       options
@@ -17,4 +18,4 @@ router.post('/search', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

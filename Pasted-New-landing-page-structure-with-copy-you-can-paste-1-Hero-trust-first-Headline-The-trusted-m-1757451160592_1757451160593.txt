@@ -1,0 +1,91 @@
+New landing page structure (with copy you can paste)
+
+1) Hero (trust-first)
+
+Headline:
+The trusted marketplace for legal hemp & cannabis trade
+
+Sub-headline:
+Standardised disclosures, verified participants, and comparable pricing—so qualified deals happen faster, compliantly.
+
+Primary CTAs:
+	•	Post a Buy Signal
+	•	Browse Verified Supply
+Secondary CTA: Apply as a Broker
+
+Legal ribbon (always visible):
+Available only in permitted jurisdictions. We verify identity and licences and keep an auditable trail for every transaction.
+
+2) Jurisdiction & compliance gate
+	•	Selector: “Where are you trading from?” Country + Region
+	•	Notice: We only enable trading features where permitted by law. In restricted regions, you can view educational content and contact support.
+
+3) Proof of trust (metrics strip)
+	•	1,248 licences & COAs on file
+	•	312 verified businesses (KYC/KYB)
+	•	99.6% uptime (last 30 days)
+	•	48–72h median time-to-first qualified option
+(Numbers can be placeholders you’ll update as pilots run.)
+
+4) How it works (6 steps)
+	1.	Verify – We KYC/KYB buyers, sellers and brokers.
+	2.	Signal – Post what you need (or have), with standardised disclosures.
+	3.	Compare – We return comparable options from verified sources.
+	4.	Check – COAs/licences attached; trust badges visible.
+	5.	Transact – Use escrow/LC/EFT per jurisdiction and counterparties.
+	6.	Audit – Every action has a consent receipt and immutable log.
+
+5) Price discovery & disclosure
+
+Section title: Better price discovery through standardisation
+Copy:
+We normalise units and disclosures so every option is apples-to-apples: quantity, grade/specs, region, currency, and verified documentation. That narrows the bid–ask spread and speeds negotiation.
+
+Card bullets:
+	•	Universal Seller Disclosure schema
+	•	Comparable pricing cards (currency/unit normalised)
+	•	Market snapshot: median & range (by category/sub-category)
+
+6) Broker-friendly by design
+
+Copy:
+Brokers power this market. Invite sellers, manage mandates, create listings on their behalf, and get credited transparently when deals close.
+
+CTA: Apply as a Broker → explain mandate + commission snapshot in 60 seconds.
+
+7) Trust & security
+	•	KYC/KYB + licence verification
+	•	Consent receipts & audit trails
+	•	POPIA & GDPR data minimisation
+	•	Encryption at rest/in transit
+	•	Status page & incident policy
+
+8) Case studies / quotes
+
+“We found a qualified buyer in 48 hours with verified docs attached. Negotiations were shorter and cleaner.” — Eastern Cape producer
+
+“Comparable options let us make an offer quickly and confidently.” — EU buyer
+
+9) Developer/API (optional panel)
+
+For partners: Signals API to turn buyer/seller intent into comparable options—with consent-based connectors.
+
+10) Footer (legal clarity)
+	•	Jurisdiction list, Prohibited use policy, Privacy, Terms, Contact, Status.
+
+⸻
+
+Microcopy upgrades (replace these on buttons & labels)
+	•	“Shop Online” → Browse Verified Supply (B2B tone)  ￼
+	•	“Learn More” → How regulated trading works
+	•	“Marketplace” → Listings
+	•	“Search” → Post a Buy Signal / Find Options
+
+⸻
+
+UX details that sell trust
+	•	Verified badges on cards: Docs on file, Licence verified, Repeat counterparty, On-time track record.
+	•	Trading name (anonymous) visible on public cards; full legal name only after mutual agreement/KYC.
+	•	Reference numbers on listings (REF-YYMMDD-Region-ShortID).
+	•	“What’s missing” checklist before publish (COA, licence/cert, photo, frequency, payment method).
+	•	Country banner at top right: current jurisdiction & change link.

@@ -1,0 +1,103 @@
+events (already exists)
+	•	We will log: mandate_invited, mandate_accepted, mandate_revoked, listing_created_broker, listing_published_broker, deal_marked_broker_attributed.
+
+Provide migration files/commands to run inside Replit. Do not run any imports at startup. If legacy rows violate NOT NULLs, use safe defaults.
+
+3) Mandate flows — API endpoints
+
+Add server endpoints (Express) with try/catch and RBAC:
+	•	POST /api/mandates/invite (role: broker)
+Body: { seller_org_name?, seller_org_id?, doc_url?, scope_commodities?, scope_regions?, exclusive?, commission_type?, commission_rate?, starts_at?, ends_at? }
+Behaviour:
+	•	If seller_org_id missing, create the org (admin-safe default) and link later when seller claims it.
+	•	Create mandate with status='pending'.
+	•	Generate a one-time claim URL for the seller admin to approve.
+	•	Log mandate_invited.
+	•	POST /api/mandates/:id/accept (role: seller who is admin of seller_org_id)
+	•	Sets status='active', stamps starts_at if missing.
+	•	Log mandate_accepted.
+	•	POST /api/mandates/:id/revoke (role: seller admin or admin)
+	•	Sets status='revoked'.
+	•	Log mandate_revoked.
+	•	After revoke, broker instantly loses create/edit rights for that org.
+	•	GET /api/mandates/mine (role: broker)
+	•	Lists mandates where broker_user_id = me with seller org names and statuses.
+	•	GET /api/orgs/:orgId/mandates (role: seller admin or admin)
+	•	Lists broker mandates over this org.
+
+4) Broker permissions (server-side)
+	•	A broker with an active mandate over seller_org_id can:
+	•	POST /api/listings with seller_org_id set → create listing as on behalf of seller. Set:
+	•	created_by_user_id = broker.id
+	•	broker_user_id = broker.id
+	•	created_via = 'broker'
+	•	Also snapshot current commission terms from the active mandate into listings.commission_*_snapshot on publish.
+	•	PATCH /api/listings/:id for listings where listings.seller_org_id has an active mandate linked to this broker.
+	•	Upload documents (COA/licence/images) for that listing.
+	•	Reply to messages as broker in threads tied to the listing.
+	•	A broker cannot change seller banking/payment details (guard these routes).
+	•	If a mandate is revoked/expired, the broker immediately loses permissions on those listings (check on each request).
+
+5) Deal attribution (server)
+
+When POST /api/deals/:id/mark-done (or your existing endpoint to mark a deal complete) is called:
+	•	If listings.broker_user_id is set, create a deal_attributions row:
+	•	commission_type/commission_rate from the snapshot on the listing.
+	•	gmv and currency from the deal payload.
+	•	Pre-calc calculated_commission if possible (percent of GMV, or flat).
+	•	Log event deal_marked_broker_attributed.
+
+6) UI — Broker dashboards & flows
+
+Add/extend React routes/pages (keep HashRouter if used):
+	•	Broker Home (/broker)
+	•	Cards: Active mandates, Pending invitations, Live listings by my sellers, Drafts needing attention.
+	•	CTA: “Invite a Seller” (opens mandate invite wizard).
+	•	Mandate Invite Wizard
+	•	Steps: (1) Seller Org (select existing or create name + region), (2) Scope (commodities/regions, exclusive?), (3) Commission (percent/flat + rate), (4) Upload mandate doc (optional), (5) Review & Send.
+	•	On submit → POST /api/mandates/invite → show “Invite sent” with claim link (copied) and email confirmation.
+	•	Seller Claim Page (one-time link)
+	•	Shows broker details, scope, commission, doc preview.
+	•	Buttons: Accept (→ POST /api/mandates/:id/accept) or Reject.
+	•	Create Listing (as Broker)
+	•	Add an “On behalf of” selector (seller orgs where broker has status='active').
+	•	When selected, all new listings are stamped with broker_user_id and created_via='broker'.
+	•	Show a “Brokered” badge on listing cards and details.
+	•	Listing Publish
+	•	On publish, snapshot the mandate commission into listings.commission_type_snapshot and commission_rate_snapshot.
+	•	Messages
+	•	Show sender role badges (Seller, Broker, Buyer).
+	•	Broker can message on behalf of seller for brokered listings.
+	•	Seller Org Admin (view)
+	•	Tab: Mandates — list active/pending/revoked broker mandates; buttons to revoke.
+
+7) Reporting (lite)
+	•	Add an admin/broker report endpoint/page summarising:
+	•	Active mandates count, live listings by represented sellers, deals closed influenced by broker, and estimated commissions from deal_attributions.
+
+8) Events & audit
+	•	Write events for mandate lifecycle, brokered listing actions, and attributed deals.
+	•	Ensure logs include who, what, when, and relevant IDs.
+
+9) Access control tests (must pass)
+	•	Broker without active mandate → 403 on creating/editing listings for that org.
+	•	Broker with active mandate → can create/edit listings for that org; can upload docs; cannot change seller bank details.
+	•	Revoked mandate → broker instantly loses access (next request 403).
+	•	Deal marked done → deal_attributions row created with commission snapshot.
+
+10) Non-functional constraints
+	•	Keep /healthz instant.
+	•	No connector calls or imports on startup.
+	•	Wrap all new routes in try/catch; on failure return safe 4xx/5xx JSON.
+	•	Do not expose secret keys to the browser.
+
+11) Acceptance checklist (what I will click)
+	1.	Log in as broker → invite a seller; receive a claim link.
+	2.	Open claim link as seller admin → accept → mandate becomes active.
+	3.	As broker, create a listing “on behalf of” that seller; listing shows Brokered badge.
+	4.	Publish the listing → commission snapshot is stored.
+	5.	Mark a deal done → deal_attributions row created with calculated commission.
+	6.	Revoke mandate → broker can no longer edit/create for that seller (403).
+	7.	Reports show counts and totals for the broker.
+
+Implement all of the above in the current codebase only. If any library is missing, add it to this project, but do not scaffold a fresh app. Keep the SPA and /healthz behaviour unchanged.

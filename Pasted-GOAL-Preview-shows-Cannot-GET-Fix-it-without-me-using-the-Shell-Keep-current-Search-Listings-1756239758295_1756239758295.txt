@@ -1,0 +1,160 @@
+GOAL: Preview shows “Cannot GET /”. Fix it without me using the Shell. Keep current Search (Listings only) working. Do NOT run Signals at startup. Serve the React SPA at “/”, keep /healthz, and auto-build the client once if no build exists.
+
+PLEASE:
+• Make backups of files you change into backup/previewfix-<timestamp>/.
+• Detect Vite vs CRA to find the client build dir.
+• Create a robust SPA serving block that:
+  - Serves client/dist (Vite) or client/build (CRA) at “/”
+  - If missing, spawns a one-time build (“build:client”) then serves the SPA
+  - Never interferes with /api/* or /healthz
+• Ensure the server start script runs Node (not vite dev).
+• Temporarily disable Signals at startup so they can’t break boot.
+• Switch client router to HashRouter so “/#/search” works everywhere.
+• Print exactly what changed and which URLs to open.
+
+STEP 0 — BACKUP
+Create backup/previewfix-<timestamp>/ and copy:
+- index.js / app.js / server.js (whichever exists)
+- package.json (root)
+- client/package.json
+- client/src/App.* and client/src/main.*
+- routes/search.js
+- routes/signals.js (if present)
+- services/crawlerService.js
+- connectors/* (if present)
+
+STEP 1 — FEATURE FLAGS (hard OFF for Signals)
+Create config/flags.js:
+module.exports = {
+  ENABLE_SIGNALS: false,            // hard OFF for now
+  ENABLE_UNCERTAINTY: false,
+  ENABLE_QMATCH: false,
+  ENABLE_INTUITION: false,
+  ENABLE_BANDITS: false,
+};
+
+STEP 2 — SERVER ENTRY (Express)
+Open the main server file (prefer index.js; else app.js/server.js). Ensure:
+- app.use(express.json());
+- All /api routes mounted FIRST (keep existing working search route exactly as is).
+- Health check:
+  app.get('/healthz', (req,res)=>res.status(200).send('OK'));
+
+Remove ANY app.get('/') that returns plain text.
+
+Insert the following block AFTER mounting /api routes and /healthz:
+
+// ===== SPA serving with auto-build (Vite or CRA) =====
+const path = require('path');
+const fs = require('fs');
+const { spawn } = require('child_process');
+
+const candidates = [
+  path.join(__dirname, 'client', 'dist'),   // Vite
+  path.join(__dirname, 'client', 'build'),  // CRA
+  path.join(process.cwd(), 'client', 'dist'),
+  path.join(process.cwd(), 'client', 'build'),
+];
+
+let clientDir = candidates.find(p => fs.existsSync(path.join(p, 'index.html')));
+let building = false;
+
+function ensureClientBuiltOnce(resIfBuilding) {
+  if (clientDir) return true; // already built
+  if (building) {
+    if (resIfBuilding) {
+      resIfBuilding
+        .status(200)
+        .send('<html><body style="font-family:system-ui"><h3>Building client…</h3><p>Refresh in ~20–40 seconds.</p></body></html>');
+    }
+    return false;
+  }
+  // kick off a one-time build
+  building = true;
+  console.log('No client build found. Spawning one-time build…');
+  const cmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  const proc = spawn(cmd, ['run', 'build:client'], { stdio: 'inherit', cwd: process.cwd() });
+  proc.on('exit', (code) => {
+    building = false;
+    if (code === 0) {
+      clientDir = candidates.find(p => fs.existsSync(path.join(p, 'index.html')));
+      console.log('Client build completed. clientDir =', clientDir);
+    } else {
+      console.warn('Client build failed (exit code', code, '). Check build scripts.');
+    }
+  });
+  return false;
+}
+
+// If no build yet, trigger build on first root hit
+app.get('/', (req, res, next) => {
+  if (!clientDir) {
+    if (!ensureClientBuiltOnce(res)) return; // respond “building…”
+  }
+  next();
+});
+
+if (clientDir) {
+  app.use(express.static(clientDir));
+}
+
+app.get('*', (req, res) => {
+  // never hijack APIs or healthz
+  if (req.path.startsWith('/api') || req.path === '/healthz') return res.status(404).send('Not found');
+  if (!clientDir) {
+    // build still running or failed → show message
+    return res
+      .status(200)
+      .send('<html><body style="font-family:system-ui"><h3>Building client…</h3><p>Refresh in ~20–40 seconds.</p></body></html>');
+  }
+  res.sendFile(path.join(clientDir, 'index.html'));
+});
+
+// ===== END SPA serving block =====
+
+Ensure the server listens:
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log('Server listening on', PORT));
+
+STEP 3 — PACKAGE SCRIPTS (root package.json)
+Ensure these scripts exist:
+{
+  "scripts": {
+    "build:client": "cd client && npm install && npm run build",
+    "start": "node index.js"
+  }
+}
+(If your server file is app.js or server.js, adjust the "start" script accordingly.)
+
+STEP 4 — DISABLE SIGNALS AT STARTUP
+- In index.js, only mount /api/signals routes if flags.ENABLE_SIGNALS is true.
+  const flags = require('./config/flags');
+  if (flags.ENABLE_SIGNALS) {
+    try { app.use('/api/signals', require('./routes/signals')); }
+    catch(e) { console.warn('Signals unavailable:', e.message); }
+  }
+- In services/crawlerService.js, DO NOT “query all connectors if none provided”. Only call explicitly requested connectors. Wrap each connector call in try/catch so a failure returns partial results, not an exception.
+
+STEP 5 — KEEP SEARCH (LISTINGS ONLY) EXACTLY AS IS
+- routes/search.js should still accept { query, commodityType, region, priceMin, priceMax, connectors, options } and, by default, use only internalDB. Do NOT add Signals unless explicitly requested and the flag is true.
+
+STEP 6 — CLIENT ROUTER (HashRouter)
+Switch the client router import to:
+import { HashRouter as BrowserRouter, Routes, Route } from 'react-router-dom';
+(Do this in client/src/App.* or client/src/main.* wherever BrowserRouter is imported. Do not change your routes.)
+
+STEP 7 — FINISH UP & VERIFY
+- Save all changes.
+- Start the app normally (the same “Run” you always use in Replit).
+- On first visit to root “/”, if no client build exists, you should see “Building client… refresh in ~20–40 seconds”. After it finishes, reload and you should see the React app.
+- Health check is at /healthz (plain OK).
+- Search page is at /#/search.
+
+PRINT:
+• What files you changed or created.
+• Which build dir was chosen (client/dist or client/build).
+• Confirmation that Signals are disabled at startup.
+• Final URLs:
+   - Root app:        /
+   - Health check:    /healthz
+   - Search page:     /#/search

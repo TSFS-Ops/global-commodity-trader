@@ -1,0 +1,66 @@
+// --- Publish-time validation (keep drafts lenient) ---
+type PublishCheckInput = {
+  category?: string | null;
+  subcategory?: string | null;
+  frequency?: string | null;            // one_off | weekly | monthly | quarterly | seasonal | continuous
+  payment_method?: string | null;       // wire_transfer | escrow | letter_of_credit | eft/ach | card | other
+  photo_count?: number;                 // derived from documents table (doc_type='product_image')
+  coa_count?: number;                   // derived from documents table (doc_type='coa')
+  licence_or_cert_count?: number;       // derived from documents table (doc_type in ['licence','certificate'])
+};
+
+export function computePublishBlockingIssues(i: PublishCheckInput): string[] {
+  const issues: string[] = [];
+  if (!i.category) issues.push("Choose a Category");
+  if (!i.subcategory) issues.push("Choose a Sub-category");
+  if (!i.frequency) issues.push("Set Supply Frequency");
+  if (!i.payment_method) issues.push("Choose a Payment Method");
+  if (!i.photo_count || i.photo_count < 1) issues.push("Add at least one product photo");
+  if (!i.coa_count || i.coa_count < 1) issues.push("Upload a Certificate of Analysis (COA)");
+  if (!i.licence_or_cert_count || i.licence_or_cert_count < 1) issues.push("Upload a licence or certificate");
+  return issues;
+}
+
+// In your POST /api/listings/:id/publish handler, call it like:
+import { computePublishBlockingIssues } from "./publishChecks";
+import { TAXONOMY } from "../taxonomy";
+
+function subcategoryValid(category?: string | null, sub?: string | null): boolean {
+  if (!category || !sub) return false;
+  const list = (TAXONOMY.map[category] || []);
+  return list.includes(sub);
+}
+
+app.post("/api/listings/:id/publish", async (req, res) => {
+  try {
+    const id = req.params.id;
+    // Load listing & document counts
+    const listing = await db.getListingWithCounts(id); // implement: returns category, subcategory, frequency, payment_method + counts for photos/coa/licences
+    if (!listing) return res.status(404).json({ ok:false, error:"Listing not found" });
+
+    // Validate subcategory belongs to category
+    if (!subcategoryValid(listing.category, listing.subcategory)) {
+      return res.status(400).json({ ok:false, error:`Sub-category is not valid for selected Category` });
+    }
+
+    const issues = computePublishBlockingIssues({
+      category: listing.category,
+      subcategory: listing.subcategory,
+      frequency: listing.frequency,
+      payment_method: listing.payment_method,
+      photo_count: listing.photo_count,
+      coa_count: listing.coa_count,
+      licence_or_cert_count: listing.lic_cred_count
+    });
+
+    if (issues.length) {
+      return res.status(400).json({ ok:false, error:"Cannot publish yet", checklist: issues });
+    }
+
+    await db.markListingPublished(id);  // snapshot any commission/REF logic here if you have it
+    return res.status(200).json({ ok:true, status:"live" });
+  } catch (e:any) {
+    console.error(e);
+    return res.status(500).json({ ok:false, error:"Publish failed" });
+  }
+});

@@ -1,0 +1,64 @@
+	•	If ambiguous or multiple possible matches for a canonical field are found, pick the most common header and list the alternates in the summary so I can adjust later.
+	•	The assistant should pause and ask for confirmation if critical fields (price or quantity) are missing from the sheet. If they are missing, still produce the preview and tag rows as incomplete.
+
+	8.	After I confirm (or if auto-accept is enabled) run the real import
+
+	•	Run the script without --dry-run to upsert rows into the real listings store.
+	•	Generate import_report_<timestamp>.json in backup/ listing per-row outcome, and save a copy to docs/ as latest_import_report.json for quick review.
+	•	Echo: import completed with counts and path to report.
+
+	9.	Wire crawler to include internal DB as a connector
+
+	•	Instead of external connectors, create (or update) an in-repo connector named internalDB (file connectors/internalDB.js) that exposes name: 'internalDB' and async fetchAndNormalize(token, criteria) and:
+	•	Ignores token (or validates if you want), queries the canonical listings storage (using Listing model or DB client), applies basic filters with the criteria (commodityType, region, minSocialImpactScore, priceRange, etc.) and returns normalized unified records (same schema used earlier).
+	•	Ensure this internalDB connector is lightweight and used by crawler when connectors contains internalDB key or when connectors is empty (fallback).
+	•	Echo: connector added and example query that the crawler can use to fetch internal listings.
+
+	10.	Update tests and example requests
+
+	•	Create a simple test script scripts/test_crawler_internal.sh with a curl example that posts to /api/crawler/search using {"connectors":{"internalDB":""},"criteria":{...}} and prints the result. Provide the exact curl command.
+	•	Run that test and show the first 5 results in the console.
+
+	11.	Sanitise sensitive data
+
+	•	If Excel contains personal data or tokens, do NOT log or persist them publicly. Ensure the import script masks or stores sensitive fields in safe places and the import report avoids printing full personal identifiers.
+	•	Echo: any rows flagged with personal data and how they were handled.
+
+	12.	Add a rollback helper
+
+	•	Create scripts/undo_last_import.js which reads the import_report_<timestamp>.json and reverts inserted/updated records using the pre-import backup or by running deletes for entries that were created during the import. Document clearly that this undo only reverts what the importer recorded.
+	•	Echo: rollback script ready and how to run it.
+
+	13.	Commit changes and push
+
+	•	Add the new files (import script, internalDB connector, test script) and the modifications (if any) to the repo and create a commit with message: feat(importer): add excel import script + internalDB connector; backup mock connectors.
+	•	Push and echo Git commit SHA.
+
+	14.	Final verification steps (manual)
+
+	•	Provide three exact curl commands to run:
+	1.	Dry-run importer (if not already run).
+	2.	Real importer run.
+	3.	Crawler query with internalDB.
+	•	Show expected example snippets of the JSON response structure with the first listing fields.
+
+	15.	Report & next actions
+
+	•	Produce a short human summary in plain English that includes:
+	•	Which DB type was detected.
+	•	Where the uploaded file was found.
+	•	The column mapping used.
+	•	Counts of rows read / imported / updated / skipped.
+	•	Path to the import report and backup folder.
+	•	How to run crawler to fetch internal listings and how to revert if needed.
+	•	Any rows with validation errors and recommendations for cleanup.
+
+Safety and caveats
+	•	Do not delete the original mock files without backing them up.
+	•	Do not overwrite any production data unless an explicit --force flag is passed (by me).
+	•	If the assistant cannot detect a supported DB client, default to writing data/listings.json and instruct how to switch to DB integration later.
+	•	Mask any sensitive personal data in console output.
+
+⸻
+
+If you understand, proceed now and show me the dry-run preview mapping and the first 10 preview records. If any critical field is missing in the spreadsheet (price, quantity or counterparty), stop after dry-run and report what’s missing and where.

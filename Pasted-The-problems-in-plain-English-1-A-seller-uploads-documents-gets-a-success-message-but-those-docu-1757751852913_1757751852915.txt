@@ -1,0 +1,106 @@
+The problems in plain English
+	1.	A seller uploads documents, gets a success message… but those documents don’t show up in the Document Repository / Document Management.
+	2.	Because the app doesn’t “see” the documents, every time the seller starts Create Listing they’re asked to upload again.
+
+We need the app to detect once the docs exist and reuse them across listings.
+
+⸻
+
+What we want (policy)
+	•	Ask once, reuse forever (until a doc expires).
+	•	Only ask again if:
+a) the required doc doesn’t exist,
+b) the doc is expired, or
+c) the seller enters a regulated category that needs an extra licence.
+	•	Listing creation should not be blocked for missing docs (show a banner only). If you must block, do it at Publish or before replying to a buyer—not at draft creation.
+
+⸻
+
+Root cause checklist (what’s likely wrong)
+	•	Upload saves the file but doesn’t create a database record (so the list query finds nothing).
+	•	Doc is saved against the wrong owner (e.g., an Organisation you’ve disabled, while the Repository lists User docs).
+	•	The Repository filters out uploaded/pending docs and only shows verified ones.
+	•	The Repository reads from different storage/bucket than the upload endpoint (dev vs prod).
+	•	The “Do you have docs?” check uses a stale/local flag; it doesn’t ask the server.
+
+⸻
+
+Required fixes (simple, durable)
+
+1) Single source of truth on the server (one flag everyone uses)
+	•	Extend the profile endpoint (e.g., /api/auth/me) to return:
+	•	has_required_docs: boolean
+	•	doc_status: "missing" | "uploaded" | "verified" | "expired"
+	•	missing_doc_types: string[] (optional)
+	•	Compute this on the server from the documents table (not from client/localStorage and not from organisations—since you removed them).
+	•	For now (no organisations), attach docs to user_id only.
+
+2) Upload endpoint must always create a DB row
+
+When a seller uploads a document:
+	•	Create a Document row with:
+id, user_id, doc_type, status ('uploaded' initially), storage_url, uploaded_at, verified_at (nullable), expires_at (nullable)
+	•	Return that row in the upload response.
+
+3) Repository list endpoint must show what’s actually there
+	•	/api/documents should return all seller docs for the current user, with statuses uploaded and verified by default (don’t hide pending uploads).
+	•	Only hide pending docs if the client explicitly asks for ?status=verified.
+
+4) Client refresh after upload
+	•	After a successful upload, the client should:
+	1.	Refetch /api/documents so the file appears immediately in the Repository.
+	2.	Refetch /api/auth/me so has_required_docs flips to true.
+	•	The Create Listing screen must read that server flag and stop prompting.
+
+5) Don’t block drafts
+	•	Let sellers create a draft listing without docs.
+	•	If docs are missing, show a small banner: “Docs missing or pending → upload to get Verified & better ranking.”
+	•	If you must enforce docs, do it at Publish (or before viewing buyer contact), not at draft start.
+
+6) Align environments
+	•	Ensure both upload and repository use the same bucket/prefix and the same database (prod vs dev often gets crossed).
+	•	Put bucket name/prefix in env vars and use the same values in both endpoints.
+
+⸻
+
+Quick tests (fast to run)
+	1.	Upload → appears
+	•	Upload a doc as a seller → it appears in Repository within 1–2 seconds (list refetch).
+	•	Reload the page → it’s still there.
+	2.	Profile flips
+	•	After upload, fetch /api/auth/me → has_required_docs is true and doc_status is uploaded or verified.
+	3.	No more loops
+	•	Go to Create Listing → no prompt to upload again; only a small banner if verification is pending.
+	4.	Expiration logic (if you use it)
+	•	Manually mark a doc expired → Repository shows it as expired; Create Listing shows a specific prompt to renew that doc (not everything).
+
+⸻
+
+What to log (helps debugging)
+	•	On upload success: log user_id, doc_type, storage_url, document_row_id.
+	•	On Repository list: log the user_id being queried and how many docs returned.
+	•	On profile compute: log has_required_docs and doc_status for the current user.
+
+⸻
+
+Copy for the UI (plain, friendly)
+	•	Banner (missing): “You’re missing required documents. Upload now to get Verified and improve visibility.”
+	•	Banner (pending): “Thanks — your documents are received and pending verification. You can continue.”
+	•	Banner (expired): “Your [licence] expired on 23 Aug 2025. Please upload a new copy.”
+
+⸻
+
+Acceptance criteria (done = done)
+	•	A seller uploads once; docs show in Repository and stay across sessions.
+	•	Starting Create Listing does not re-ask for docs if they exist.
+	•	The profile endpoint is the only thing the client uses to decide whether to prompt; there’s no duplicate logic.
+	•	No hard blocks at draft; optional block at publish only for regulated categories (or postpone that until later).
+
+⸻
+
+Optional: “make it work today” band-aid (while dev fixes backend)
+
+If you need immediate relief before backend changes:
+	•	Temporarily disable the doc gate on Create Listing and show just the banner.
+	•	Keep the gate at Publish only.
+This removes the “asked every time” pain while the DB and API changes land.

@@ -1,0 +1,32 @@
+You are an assistant/developer working inside my existing Replit Node project (commodity platform backend). I want to remove the placeholder mock data/connectors and import an Excel file I uploaded to the Repl file tree: /home/runner/Izenzo Trading Platfrom V1.xlsx (or /workspace/Izenzo Trading Platfrom V1.xlsx — detect actual path). Follow these instructions exactly, be cautious, and report status at each step.
+
+Primary goals
+	1.	Backup current mock connector files and any seeded mock listings or in-memory cache.
+	2.	Remove (or move out of the active code path) the placeholder mock connectors.
+	3.	Parse the uploaded Excel file and import the rows as canonical listings into our production storage (the same storage our matching service uses).
+	4.	Replace the mock connector behaviour (so crawler can optionally read from the newly imported internal listings store) while leaving the crawler connector framework intact for future external connectors.
+	5.	Provide verification and test commands and a short human-friendly report of what was done and how to revert.
+
+Detailed steps (do these in order). After each numbered step, echo a short one-line status message.)
+	1.	Detect project environment & persistence layer
+
+	•	Inspect the repository to identify the primary persistence: look for Mongoose/Mongo connection (mongoose.connect), pg/knex for Postgres, sqlite3, or simple JSON/Flatfile seeding scripts (files named seed, fixtures, or directories like data/, db/, models/). Also check package.json for mongoose, mongodb, pg, sqlite3, lowdb, or better-sqlite3.
+	•	If Mongo/Mongoose is present, use Mongoose models to insert/update listings. If Postgres/Knex/pg is present, use the existing DB client. If only a JSON file or in-memory store is used, write to a canonical JSON file (e.g. data/listings.json) and wire the app to read from it.
+	•	Echo: which DB type was detected and the primary model file for listings (path).
+
+	2.	Back up mock connectors and mock data
+
+	•	Create a safe backup folder: backup/pre-import-<timestamp>/.
+	•	Move existing mock connector files (e.g. connectors/mockA.js, connectors/mockB.js, connectors/*mock*.js) into the backup folder. Keep exact copies (do not delete).
+	•	If there is an initial seeding script or sample data file (for example seed.js, scripts/seed.js, data/*.json), copy it into the backup folder.
+	•	If the code seeded the DB at startup (look for if (process.env.SEED) ... or similar), identify and back up any seed statements (copy files and comment out the seed invocation temporarily), then echo what was moved/disabled.
+
+	3.	Neutralise mock connectors (safe detach)
+
+	•	Instead of deleting, change the connector exports to inactive backups, or rename them (e.g. connectors/mockA.js → connectors/_mockA.disabled.js) — but the previous step already moved them to backup/. Ensure the connectors folder still exists and only contains “real” connector modules or placeholder README explaining that connectors are now dynamic.
+	•	Edit services/crawlerService.js if necessary so that it no longer uses the hard-coded list of mock connector names. Ensure the crawler uses dynamic discovery (fs.readdirSync) only and that fallback-to-all-connectors still works (it should return only connectors present).
+	•	Echo: list of files moved/renamed and confirmation crawler still starts.
+
+	4.	Install/ensure Excel parsing package exists
+
+	•	Check package.json for xlsx or exceljs. If not present, install xlsx (fast and simple) by running:

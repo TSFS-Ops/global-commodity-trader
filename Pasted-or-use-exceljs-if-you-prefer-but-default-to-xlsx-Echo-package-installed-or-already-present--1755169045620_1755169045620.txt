@@ -1,0 +1,34 @@
+or use exceljs if you prefer — but default to xlsx.
+
+	•	Echo: package installed or already present.
+
+	5.	Create an import script scripts/import_excel_listings.js
+
+	•	Add a robust script at scripts/import_excel_listings.js that:
+	•	Locates the uploaded Excel file (auto-detect common upload paths under the Repl root).
+	•	Reads the first worksheet (or allow the assistant to auto-select the first non-empty sheet).
+	•	Maps Excel columns to the canonical listing schema used by the project. The mapping logic should:
+	•	Look for common column headers (case-insensitive, trimmed) such as: id, listing id, counterparty, seller, product, commodity, commodityType, quantity, qty, quantityAvailable, price, pricePerUnit, unitPrice, region, location, quality, qualitySpecs, license, licenseStatus, socialImpactScore, socialImpactCategory, notes, country, currency.
+	•	If a column header is not recognized, keep it in a metadata object field for that record.
+	•	Validate each row:
+	•	Ensure quantityAvailable and pricePerUnit parse to numbers (skip or flag rows that fail).
+	•	Ensure socialImpactScore in each row (if present) is 0–100 (coerce if reasonable, otherwise set to null and flag).
+	•	Trim whitespace and normalise region/country strings.
+	•	Detect duplicates by primary key candidate: prefer a column id or listingId or combination of counterpartyName + product + pricePerUnit + quantity as fallback.
+	•	Upsert into the project’s canonical listings storage:
+	•	If using Mongo/Mongoose, use the existing Listing model to updateOne({importKey}, {$set: {...}}, {upsert:true}).
+	•	If using Postgres/Knex, use INSERT ... ON CONFLICT(...) DO UPDATE or equivalent upsert logic.
+	•	If using a JSON file, load the current JSON, merge (upsert) the listings by importKey, and write back atomically (write to a temp file then rename).
+	•	Log a summary at the end: total rows read, rows imported, rows updated, rows skipped, and the path to a small import_report_<timestamp>.json stored in backup/ that contains per-row status and any row-level errors.
+	•	The script must never delete existing non-mock listings unless explicitly instructed by an additional flag --purge-existing (the default should be safe upsert).
+	•	Echo: script created and file path.
+
+	6.	Run the importer in dry-run first
+
+	•	Execute the script with --dry-run (or prompt-style dry-run) so it reads the spreadsheet, performs validation and mapping, and writes an import_preview_<timestamp>.json but does not insert into the DB.
+	•	Provide the preview file to me (or show its top 20 entries in the console) so I can confirm column mappings and a few sample records.
+	•	Echo: dry-run completed and location of preview file.
+
+	7.	Confirm mappings (assistant action)
+
+	•	Without intervening me, try to auto-map columns using best guesses. But the script should print a human-friendly column mapping summary like:

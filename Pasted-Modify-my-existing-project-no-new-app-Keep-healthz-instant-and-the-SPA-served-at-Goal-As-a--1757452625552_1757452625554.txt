@@ -1,0 +1,33 @@
+Modify my existing project (no new app). Keep /healthz instant and the SPA served at /.
+
+Goal: As a logged-in seller, I must be able to Save as Draft on /api/listings without 401 errors. Make auth explicit, fix cookies/JWT on our custom domain, and return the right status codes.
+
+Server (Express):
+	1.	Add GET /api/auth/me that returns { ok:true, user:{ id, email, role } } when authenticated, or { ok:false } with 401 when not.
+	2.	If we use cookie session: ensure session cookies are set with SameSite=None and Secure:true; set app.set('trust proxy', 1) for Replit/HTTPS; use CORS with credentials:true and origin including both the Replit preview URL and our custom domain.
+	3.	If we use Supabase/Auth JWT: add middleware that reads Authorization: Bearer <token>, verifies the token, and sets req.user={ id,email,role }.
+	4.	Listing routes must require auth and the right role:
+	•	POST /api/listings, PATCH /api/listings/:id, POST /api/listings/:id/publish → requireAuth + requireRole('seller','broker','admin').
+	•	If not logged in → 401. If logged in but wrong role → 403 with a clear JSON message.
+	5.	Log (server console) the user id/role on listing writes so we can debug.
+
+Client:
+	1.	Add a small API wrapper so all protected fetches include auth:
+	•	If cookie-based: credentials:'include'.
+	•	If token-based (e.g., Supabase): attach Authorization: Bearer <token> from the current session.
+	2.	On app init, call /api/auth/me and store { id,email,role }. If 401, show “Sign in” instead of seller tools.
+	3.	Update the Create Listing “Save as Draft” call to use the API wrapper (so credentials/token are included).
+	4.	If the API returns 401, show “You’re signed out — please sign in.” If 403, show “This action is for sellers/brokers.”
+
+Acceptance (I will check):
+	•	As a seller on the custom domain, /api/auth/me returns my id/email/role.
+	•	POST /api/listings succeeds (draft created).
+	•	Network tab shows the request carrying cookies (for cookie session) or an Authorization header (for JWT).
+	•	Wrong role returns 403 (not 401).
+	•	/ and /healthz still work instantly.
+
+⸻
+
+Drop-in code (if you want to apply it directly)
+
+1) Server: CORS + cookie session flags (cookie-based auth)

@@ -1,0 +1,84 @@
+1. Extend the Listing Data Model
+
+File to update: The schema or model file where you define a carbon-credit (or commodity) listing.
+What to do:
+	•	Add two new properties to each listing record:
+	1.	socialImpactScore: a numeric rating (for example 0–100) that quantifies the community or environmental benefit.
+	2.	socialImpactCategory: a short text label (e.g. “Job Creation”, “Education”, “Food Security”) that describes the type of impact.
+	•	Ensure the score is validated so it cannot exceed your chosen range.
+Why: Without these fields, the system cannot store or surface the “soft cost” information that buyers need to decide.
+
+⸻
+
+2. Accept New Fields in the Listing Endpoint
+
+File to update: The route or controller that handles creation (POST) of new listings.
+What to do:
+	•	Extend the request-handling logic so it reads the two new fields from the incoming data.
+	•	Pass those values into the listing-creation routine so they become part of each new record.
+	•	If a submission omits them, set reasonable defaults (for example, score = 0 and category = empty).
+Why: Buyers and sellers must be able to include social-impact information when they post new offers.
+
+⸻
+
+3. Allow Buyers to Filter by Social Impact
+
+File to update: The route or controller that handles match-requests or search queries.
+What to do:
+	•	Modify the query logic so it can accept an optional “minimum social impact score” parameter and optional “impact category” parameter.
+	•	When provided, filter out any listings that fall below the requested score or that do not match the chosen category.
+Why: Buyers often only want credits that meet a certain social-benefit threshold or specific impact type.
+
+⸻
+
+4. Incorporate Social Impact into the Scoring Function
+
+File to update: The matching-service module where you compute a “match score” for each candidate listing.
+What to do:
+	•	Identify where price, quantity, region and other criteria are combined into a single numeric score.
+	•	Insert an additional term that reflects the listing’s socialImpactScore multiplied by a “social weight.”
+	•	Make that social weight configurable by the buyer (so they can say “I care 15 % about social impact”).
+Why: This ensures that listings with stronger social benefits rise higher in the results when the buyer values them.
+
+⸻
+
+5. Update the Front-End Form to Capture Buyer Preferences
+
+File to update: The React/Vue/Angular component (or page) where buyers enter their match criteria.
+What to do:
+	•	Add UI controls for:
+	1.	Minimum social impact score (e.g., a slider or numeric input).
+	2.	Preferred impact category (e.g., a dropdown list of your defined categories).
+	3.	Social-impact weight (e.g., a slider or percentage input, defaulting to something like 15 %).
+	•	Ensure these values are included in the JSON payload when the user submits the form.
+Why: Buyers need a simple interface to express how much they value social impact alongside price and location.
+
+⸻
+
+6. Display Social Impact in the Results List
+
+File to update: The component that renders each matched listing in the results.
+What to do:
+	•	Display the listing’s socialImpactCategory and socialImpactScore in a prominent spot (for instance, next to price and location).
+	•	Optionally use icons or badges to make “Social Impact” visually stand out.
+Why: Buyers need clear, immediate visibility of a listing’s social-cost attributes when comparing options.
+
+⸻
+
+7. Set and Propagate Default Weights
+
+File to update: Wherever you define default search or match-request parameters (e.g. a config file or context provider).
+What to do:
+	•	Add a default “socialImpactWeight” (e.g. 0.15).
+	•	Ensure that if the buyer does not adjust the slider, the back end still receives and applies this default.
+Why: Guarantees consistent behaviour even if the user leaves that control untouched.
+
+⸻
+
+8. Add Automated Tests (Optional but Recommended)
+
+Files to update: Your test suite for the matching-service and for the listing-creation endpoint.
+What to do:
+	•	Write a unit test confirming that a listing with the maximum socialImpactScore truly boosts its overall match score by the configured weight.
+	•	Add an integration test sending a match request with a minimum socialImpactScore filter and verifying only listings above that threshold appear.
+Why: Automated tests catch errors early and ensure the new social-impact features behave exactly as intended.

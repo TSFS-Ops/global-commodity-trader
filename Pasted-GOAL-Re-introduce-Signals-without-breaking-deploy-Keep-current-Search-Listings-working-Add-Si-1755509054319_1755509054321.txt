@@ -1,0 +1,126 @@
+GOAL: Re-introduce “Signals” without breaking deploy. Keep current Search (Listings) working. Add Signals behind a feature flag (default OFF). No startup imports/crawls. Ensure SPA served at "/" and health at "/healthz". Use HashRouter on the client so "/#/search" always works.
+
+SAFETY BACKUP
+- Create backup/signalsv2-<timestamp>/ and copy:
+  index.js/app.js/server.js, routes/search.js, services/crawlerService.js,
+  connectors/*, routes/signals.js (if any), package.json, client/package.json,
+  client/src/App.* and client/src/main.*.
+
+SERVER GUARANTEES
+1) Open the main Express entry (index.js preferred). Ensure:
+   app.use(express.json());
+   // mount all /api routes FIRST (search, etc.)
+   // health check:
+   app.get('/healthz', (req,res)=>res.status(200).send('OK'));
+   // remove any app.get('/') that returns “OK”
+   // SPA static serving AFTER /api:
+   const path = require('path'); const fs = require('fs');
+   const candidates = [
+     path.join(__dirname,'client','dist'),
+     path.join(__dirname,'client','build'),
+     path.join(process.cwd(),'client','dist'),
+     path.join(process.cwd(),'client','build'),
+   ];
+   const clientDir = candidates.find(p=>fs.existsSync(path.join(p,'index.html')));
+   console.log('clientDir:', clientDir || '(none)');
+   if (clientDir) {
+     app.use(express.static(clientDir));
+     app.get('*', (req,res)=>{
+       if (req.path.startsWith('/api') || req.path === '/healthz') return res.status(404).send('Not found');
+       res.sendFile(path.join(clientDir,'index.html'));
+     });
+   }
+
+FEATURE FLAG
+- Read process.env.ENABLE_SIGNALS (default "false").
+  const ENABLE_SIGNALS = (process.env.ENABLE_SIGNALS === 'true');
+
+SIGNALS STORAGE (tiny, local)
+- Create data/signals.json if missing with [].
+- Create lib/safeJsonStore.js with atomic read/write helpers (readJson(file), writeJson(file, data)).
+
+ROUTES — SIGNALS (guarded)
+- Create routes/signals.js exporting an Express router:
+  POST /api/signals/ingest
+    body: { source, kind, companyName, contact?, commodity, region, text, priceMin?, priceMax?, url? }
+    validations:
+      commodity must be one of ['cannabis','hemp','cbd']
+      text <= 500 chars
+    derive companyKey = slug(companyName)
+    save { id: uuid, createdAt: now, views:0, clicks:0, ...payload }
+    return { ok:true, id }
+  GET /api/signals/search?query=&commodity=&region=&page=1&limit=20
+    filter by commodity/region (allowed only cannabis/hemp/cbd)
+    simple keyword match on companyName/text
+    sort by createdAt desc
+    return { ok:true, count, page, pages, results }
+  POST /api/events/log
+    body: { type: 'view'|'click', itemType: 'signal', itemId }
+    increment views/clicks on the matching signal; return { ok:true }
+
+- In index.js, mount signals router ONLY if ENABLE_SIGNALS:
+   if (ENABLE_SIGNALS) app.use('/api/signals', require('./routes/signals'));
+
+CONNECTOR — internalSignals (guarded)
+- Create connectors/internalSignals.js:
+   module.exports = {
+     name: 'internalSignals',
+     fetchAndNormalize: async (token, criteria) => {
+       // read data/signals.json; filter by commodity/region/keyword;
+       // map to unified shape the crawler uses:
+       // { _type:'signal', counterpartyId:id, counterpartyName:companyName,
+       //   commodityType:commodity, region, pricePerUnit:null, quantityAvailable:null,
+       //   qualitySpecs:null, licenseStatus:null, createdAt }
+       // return array quickly (no network, no heavy work)
+     }
+   };
+
+CRAWLER — NO FALLBACKS
+- In services/crawlerService.js:
+  * Remove any "query all connectors if none passed" fallback.
+  * Respect options.noCache to bypass cache.
+  * Wrap connector calls in try/catch so one bad connector cannot break the response.
+
+SEARCH — KEEP LISTINGS ONLY BY DEFAULT
+- In routes/search.js:
+  * Accept { query, commodityType, region, priceMin, priceMax, useListings=true, useSignals=false }.
+  * Build connectors object from toggles:
+      const connectors = {};
+      if (useListings !== false) connectors.internalDB = '';
+      if (ENABLE_SIGNALS && useSignals) connectors.internalSignals = '';
+  * Enforce allowed commodities {cannabis, hemp, cbd}. If blank, default to ['cannabis','hemp','cbd'].
+  * Filter non-allowed commodities out server-side.
+  * Apply price/region filters and return { ok:true, meta, count, results }.
+
+CLIENT — HASHROUTER + TOGGLE
+- In client/src/App.* (or main.*) switch to:
+   import { HashRouter as BrowserRouter, Routes, Route } from 'react-router-dom';
+- In client/src/pages/SearchPage.* add two checkboxes:
+   [x] Listings  [ ] Signals
+  Build the POST body:
+   const connectors:any = {};
+   if (useListings) connectors.internalDB = '';
+   if (useSignals) connectors.internalSignals = '';
+   fetch('/api/search', { body: JSON.stringify({ query, commodityType, region, priceMin, priceMax, useListings, useSignals, connectors, options:{ noCache:true, timeoutMs:3000 } }) })
+  Disable the Signals checkbox in the UI if ENABLE_SIGNALS is false (optional: fetch /api/signals/health to decide).
+
+BUILD & VERIFY
+- In /client: npm install (or npm ci); npm run build (creates dist/ or build/)
+- Ensure root package.json "start" runs Node (not vite). Example: "start": "node index.js"
+- Start server; print “Server listening on …”.
+
+PRINT TEST COMMANDS
+1) (Signals OFF by default) Verify listings search still works:
+   curl -s -X POST http://localhost:3000/api/search -H "Content-Type: application/json" -d '{ "commodityType":"cannabis", "useListings": true, "useSignals": false, "options":{"noCache":true} }' | jq ".ok,.count"
+2) Turn Signals ON (temporarily) by setting ENABLE_SIGNALS=true in env and restarting; then:
+   curl -s -X POST http://localhost:3000/api/signals/ingest -H "Content-Type: application/json" -d '{"source":"manual","kind":"buyer_intent","companyName":"EC Wellness Coop","commodity":"cannabis","region":"EC","text":"Looking for indoor trial 50kg then 300kg/m."}' | jq
+   curl -s "http://localhost:3000/api/signals/search?commodity=cannabis&region=EC" | jq ".count,.results[0]"
+   curl -s -X POST http://localhost:3000/api/search -H "Content-Type: application/json" -d '{ "query":"indoor","commodityType":"cannabis","region":"EC","useListings": false,"useSignals": true,"connectors":{"internalSignals":""},"options":{"noCache":true}}' | jq ".count,.results[0]"
+3) URLs to open:
+   /            -> SPA
+   /healthz     -> OK
+   /#/search    -> Search page (toggle Signals off/on)
+
+OUTPUT
+- Summarise files changed and whether ENABLE_SIGNALS is currently true or false.
+- Print final URLs and “DONE”.

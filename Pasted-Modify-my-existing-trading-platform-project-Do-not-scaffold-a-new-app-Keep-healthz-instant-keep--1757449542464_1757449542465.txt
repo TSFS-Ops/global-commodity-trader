@@ -1,0 +1,18 @@
+Modify my existing trading-platform project. Do not scaffold a new app. Keep /healthz instant, keep the SPA serving at /, and do not run heavy jobs at startup.
+
+Goal: Reorder the Create Listing flow so it’s category-driven and logical. The order must be:
+Step 1: Category → Step 2: Sub-category (dependent) → Step 3: Identity & Presentation (Anonymity toggle + Trading name, Auto-suggested Title, Short Description) → Step 4: Quantity & Logistics (Quantity+Unit, MOQ, Location/Region, Supply Frequency) → Step 5: Commercials (Price+Currency, Payment Method) → Step 6: Compliance & Trust (COA, Licences/Certificates) → Step 7: Media (Product Photos) → Step 8: Review & Publish (checklist).
+
+Requirements:
+• “Save as Draft” must be available on every step, allowing partial info (nullable fields in DB).
+• Sub-category is disabled until Category is selected and resets when Category changes.
+• Server accepts partial drafts but on Publish must validate the checklist (category, sub-category, frequency, payment method, ≥1 photo, ≥1 COA, ≥1 licence/certificate; keep our current rules if stricter).
+• Use controlled selects/inputs: value={state || ""} (avoid defaultValue) to prevent the blank-screen issue.
+• Keep anonymity support: “Trade anonymously” checkbox + “Trading name” (shown publicly if checked; legal name stays internal).
+• Add a simple auto-title suggestion once Category/Sub-category/Region/Quantity exist (seller can edit).
+• No heavy tasks on startup; wrap new handlers in try/catch.
+
+Deliverables:
+	1.	Server: publish-time validator helper; no changes to /healthz or SPA catch-all.
+	2.	Client: update listing-form (or equivalent) into a stepper with the field order above; Sub-category options fetched from existing /api/taxonomy; Publish step shows a checklist and disables Publish until all pass.
+	3.	Acceptance: I can (a) choose Category, then see correct Sub-categories; (b) save drafts on any step; (c) see a clear publish checklist; (d) Publish only when complete; (e) root / works and /healthz is OK instantly.

@@ -1,0 +1,123 @@
+import React, { useState } from 'react';
+
+type Result = {
+  counterpartyId?: string;
+  counterpartyName?: string;
+  commodityType?: string;
+  quantityAvailable?: number;
+  pricePerUnit?: number;
+  region?: string;
+  qualitySpecs?: string;
+  licenseStatus?: boolean;
+  socialImpactScore?: number;
+  socialImpactCategory?: string;
+};
+
+export default function SearchPage() {
+  const [query, setQuery] = useState('');
+  const [commodityType, setCommodityType] = useState('');
+  const [region, setRegion] = useState('');
+  const [priceMin, setPriceMin] = useState<string>('');
+  const [priceMax, setPriceMax] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  const [results, setResults] = useState<Result[]>([]);
+  const [meta, setMeta] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function runSearch(e?: React.FormEvent) {
+    e?.preventDefault();
+    setLoading(true);
+    setError(null);
+    setResults([]);
+    try {
+      const body: any = {
+        query,
+        commodityType: commodityType.trim() || '',
+        region: region.trim() || '',
+        priceMin: priceMin !== '' ? Number(priceMin) : null,
+        priceMax: priceMax !== '' ? Number(priceMax) : null,
+        // force internal only and bypass cache for clean demo
+        connectors: { internalDB: '' },
+        options: { timeoutMs: 3000, noCache: true }
+      };
+
+      const res = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || 'Search failed');
+      setMeta(json.meta);
+      setResults(json.results || []);
+    } catch (err: any) {
+      setError(err.message || String(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="p-6 max-w-6xl mx-auto">
+      <h1 className="text-2xl font-semibold mb-4">Search</h1>
+
+      <form onSubmit={runSearch} className="grid md:grid-cols-3 gap-3 items-end mb-6">
+        <div className="md:col-span-1 md:col-start-1">
+          <label className="block text-sm mb-1">Keyword</label>
+          <input className="w-full border rounded p-2" placeholder="Search terms…" value={query} onChange={e=>setQuery(e.target.value)} />
+        </div>
+        <div>
+          <label className="block text-sm mb-1">Commodity</label>
+          <input className="w-full border rounded p-2" placeholder="e.g. cannabis, hemp, cbd" value={commodityType} onChange={e=>setCommodityType(e.target.value)} />
+        </div>
+        <div>
+          <label className="block text-sm mb-1">Region</label>
+          <input className="w-full border rounded p-2" placeholder="e.g. EC" value={region} onChange={e=>setRegion(e.target.value)} />
+        </div>
+        <div>
+          <label className="block text-sm mb-1">Price Min</label>
+          <input type="number" step="0.01" className="w-full border rounded p-2" value={priceMin} onChange={e=>setPriceMin(e.target.value)} />
+        </div>
+        <div>
+          <label className="block text-sm mb-1">Price Max</label>
+          <input type="number" step="0.01" className="w-full border rounded p-2" value={priceMax} onChange={e=>setPriceMax(e.target.value)} />
+        </div>
+        <div className="md:col-span-3 flex items-center">
+          <span className="text-green-700 text-sm">✓ Internal DB only (authentic cannabis/hemp data)</span>
+          <button type="submit" className="ml-auto bg-black text-white px-4 py-2 rounded">Search</button>
+        </div>
+      </form>
+
+      {error && <div className="text-red-600 mb-3">Error: {error}</div>}
+      {loading && <div>Searching…</div>}
+      {!loading && results.length === 0 && (
+        <div className="text-slate-600">No results found. This search only shows authentic cannabis/hemp listings from your system.</div>
+      )}
+
+      <div className="grid md:grid-cols-2 gap-4">
+        {results.map((r, i) => (
+          <div key={r.counterpartyId || i} className="border rounded p-3">
+            <div className="font-medium">{r.counterpartyName || 'Unknown counterparty'}</div>
+            <div className="text-sm mt-1">
+              <div><b>Commodity:</b> {r.commodityType || '—'}</div>
+              <div><b>Region:</b> {r.region || '—'}</div>
+              <div><b>Quantity:</b> {r.quantityAvailable ?? '—'}</div>
+              <div><b>Price:</b> {typeof r.pricePerUnit === 'number' ? r.pricePerUnit : '—'}</div>
+              <div><b>Quality:</b> {r.qualitySpecs || '—'}</div>
+              <div><b>License:</b> {r.licenseStatus ? 'Yes' : (r.licenseStatus === false ? 'No' : '—')}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {meta && (
+        <div className="mt-6 text-sm text-slate-500">
+          <div><b>Connectors:</b> {Array.isArray(meta.successes) ? meta.successes.map((s:any)=>`${s.name}${s.cached?'(cached)':''}[${s.count}]`).join(', ') : '—'}</div>
+          {meta.failures && meta.failures.length > 0 && (
+            <div className="text-red-600"><b>Failures:</b> {meta.failures.map((f:any)=>`${f.name}: ${f.error}`).join('; ')}</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

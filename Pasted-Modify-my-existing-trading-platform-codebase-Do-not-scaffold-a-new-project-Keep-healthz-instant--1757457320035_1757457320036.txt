@@ -1,0 +1,48 @@
+Modify my existing trading-platform codebase. Do not scaffold a new project. Keep /healthz instant, root / serving the SPA, and never run heavy jobs at startup.
+
+Goal
+
+Maintain seller self-serve sign-up (unchanged) and add a clean broker sign-up + mandate flow. Result:
+	•	A seller can create an account and list products without any broker.
+	•	A broker can create an account, invite a seller, and (only after the seller accepts the mandate) create/edit listings on that seller’s behalf with full audit/attribution.
+
+Auth & roles (server-enforced)
+	•	Confirm users.role supports: seller | buyer | broker | admin.
+	•	Default role = seller if role not provided at sign-up.
+	•	Add RBAC guards:
+	•	Sellers can CRUD their own listings & documents.
+	•	Brokers can CRUD listings & documents only for seller orgs where the broker has an active mandate.
+	•	Buyers read-only. Admins full.
+
+Sign-up UI (keep simple)
+	•	Keep the existing sign-up for sellers as is.
+	•	Add a Role selector on registration: radio buttons “Seller” (default), “Buyer”, “Broker”.
+	•	After sign-up:
+	•	Seller → onboard wizard (Create Organisation → Upload Licence/COA → First Listing).
+	•	Broker → broker dashboard (Invite a Seller via mandate).
+
+Broker flows (reuse what we built earlier)
+	•	Mandates table & endpoints as previously specified (invite → accept → revoke).
+	•	Broker dashboard: “Invite a Seller” wizard; list of mandates with statuses.
+	•	Seller organisation admin page: “Mandates” tab to Accept/Reject/Revoke.
+	•	On accepted mandate, broker gains scoped permissions to that seller org.
+
+Listings behaviour
+	•	Seller can create/publish listings for their own org(s) without a broker.
+	•	Broker can create/publish listings on behalf of a seller org only when mandate status = active. Stamp:
+	•	created_via='broker', broker_user_id, seller_org_id, snapshot commission fields on publish.
+	•	Server must reject (403) any broker listing actions without an active mandate.
+
+Backwards compatibility
+	•	Do not change existing seller accounts or their ability to create listings.
+	•	Migrations must be additive (e.g., ensure role allows broker; no destructive changes).
+
+Acceptance tests (I will click these)
+	1.	Seller self-serve: Register with default role (no selection) → role is seller. Create org, upload doc, create listing → works.
+	2.	Broker sign-up: Register with role broker → broker dashboard visible. Invite a seller; seller accepts via claim link → mandate is active.
+	3.	Broker action with mandate: As broker, create a listing on behalf of the accepted seller org → succeeds; listing shows Brokered badge.
+	4.	Broker action without mandate: Try creating a listing for an org without an active mandate → 403.
+	5.	Revocation: Seller revokes mandate → broker immediately loses edit/create rights (403 on next attempt).
+	6.	Non-regression: Root / loads the SPA; /healthz returns OK instantly.
+
+Implement only these changes in the current codebase.

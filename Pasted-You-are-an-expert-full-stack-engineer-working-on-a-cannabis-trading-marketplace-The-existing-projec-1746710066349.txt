@@ -1,0 +1,48 @@
+You are an expert full‑stack engineer working on a cannabis trading marketplace. The existing project uses:
+- **Frontend:** React (with functional components and hooks)
+- **Backend:** Node.js + Express
+- **Data layer:** MongoDB (Mongoose)
+- **Matching engine:** currently stubbed
+
+Your task is to add **two** distinct user flows side by side:
+
+1. **Search & Retrieval Flow**  
+   - UI: a search bar where the user types free‑text (e.g. “hemp oil 100L”).  
+   - Behavior: on submit, call `GET /api/products?query=<text>`  
+   - Backend: implement that endpoint to run a text index search on the `products` collection and return matching documents.  
+   - Frontend: display results in a paged list with product name, seller, price, quality specs, and a “Contact” button.
+
+2. **Input‑Driven Matching Flow**  
+   - UI: a form titled “Create Buy Request” with these fields:  
+     • ProductType (select)  
+     • Quantity (number)  
+     • PriceRange (min/max inputs)  
+     • DeliveryTerms (text)  
+     • QualitySpecs (text)  
+     • Submit button labeled “Find Counterparties”  
+   - Behavior: on submit, call `POST /api/match` with JSON body matching the form fields.  
+   - Backend: implement `POST /api/match` that accepts the request payload, passes it to a `matchingService.matchRequest(payload)` stub, and returns an array of matched `counterparty` objects.  
+   - Frontend: display the returned counterparties in a similar list, with name, location, price suggestion, and a “Message” button.
+
+### Detailed Requirements
+
+#### Frontend Changes
+
+1. Create a new page `src/pages/Matching.jsx` that renders two tabs: **Search** and **Buy Request**.  
+2. In the **Search** tab, reuse the existing `SearchBar` component (or build one) that calls `GET /api/products`.  
+3. In the **Buy Request** tab, build a new `BuyRequestForm` component with controlled inputs for each field.  
+4. After form submit, show a `MatchResults` component with the list returned from `/api/match`.  
+5. Share common styling and loading spinners; handle and display errors.
+
+#### Backend Changes
+
+1. In `routes/products.js`, add:
+   ```js
+   router.get('/', async (req, res) => {
+     const { query } = req.query;
+     const results = await Product.find(
+       { $text: { $search: query } },
+       { score: { $meta: "textScore" } }
+     ).sort({ score: { $meta: "textScore" } });
+     res.json(results);
+   });

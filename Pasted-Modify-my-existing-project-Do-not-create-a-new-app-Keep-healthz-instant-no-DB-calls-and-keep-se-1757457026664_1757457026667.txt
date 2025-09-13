@@ -1,0 +1,79 @@
+Modify my existing project. Do not create a new app. Keep /healthz instant (no DB calls) and keep serving the SPA at /. No heavy jobs at startup.
+
+Objectives
+	1.	Security & correctness (auth, CORS, headers, input validation, rate limits).
+	2.	Performance & cost (fast build, static caching/compression, slim DB load, correct indexes).
+	3.	API/DB contract (taxonomy codes end-to-end; no label/code drift).
+	4.	Reliability (clear 401 vs 403 vs 400; central error handling; no mock seeds in prod).
+
+Do the following, making minimal, targeted edits:
+
+A) Auth, CORS, cookies
+	•	Add/confirm GET /api/auth/me that returns { ok:true, user:{id,email,role} } when authenticated; 401 otherwise.
+	•	If cookie-based auth: set cookies HttpOnly=true, SameSite=None, Secure=true; app.set('trust proxy',1).
+	•	Configure CORS with credentials:true and origin limited to my Replit preview URL and my custom domain.
+	•	Ensure client fetch for protected routes uses credentials:'include' (or Authorization: Bearer <token> if JWT).
+
+B) Route guards & error codes
+	•	Listing write routes → requireAuth + requireRole('seller','broker','admin').
+	•	Not logged in → 401 JSON.
+	•	Logged in wrong role → 403 JSON.
+	•	Add a 404 handler for /api/* and a central error handler that logs stack server-side but returns safe JSON to the client.
+
+C) Input validation & normalisation
+	•	Use a shared validator (e.g., zod/Yup or a simple function) for POST/PUT/PATCH /api/listings:
+	•	Accept category_code / subcategory_code (codes only).
+	•	If labels arrive, map to codes using the taxonomy and then drop labels.
+	•	Convert "" to null for optional fields; coerce numbers safely.
+	•	Drafts: allow partials; Publish: enforce the checklist.
+	•	Reject unknown fields and return a clean 400 with a short error array.
+
+D) API/DB contract sanity
+	•	Confirm listings has (nullable unless noted):
+id, owner_user_id NOT NULL, status DEFAULT 'draft', category_code, subcategory_code, title, description, quantity NUMERIC, unit, moq NUMERIC, region, frequency, price_per_unit NUMERIC, currency, payment_method, created_at DEFAULT now().
+	•	Write only codes to DB (category_code, subcategory_code). Stop writing label columns if any exist.
+	•	Ensure /api/taxonomy returns codes + labels and add Cache-Control: public, max-age=86400, stale-while-revalidate=604800.
+
+E) Performance & resource usage
+	•	Static assets: enable gzip/Brotli (compression), strong ETag, Cache-Control for hashed files.
+	•	Build: ensure NODE_ENV=production, production React/Vite build, source maps off in prod.
+	•	Images/docs: limit upload size (e.g., 10 MB), whitelist mimetypes (images/pdf), reject executables; early return 413 for oversize.
+	•	DB pooling: set a modest pool (e.g., 5–10), per-query timeout (e.g., 10s), parameterised queries only.
+	•	Indexes: create if missing (use IF NOT EXISTS):
+	•	idx_listings_status_created (status, created_at desc)
+	•	idx_listings_owner_status (owner_user_id, status)
+	•	idx_listings_category_created (category_code, created_at desc)
+	•	idx_listings_subcategory (subcategory_code)
+	•	idx_listings_region (region)
+	•	(optional later) full-text GIN on to_tsvector('simple', coalesce(title,'') || ' ' || coalesce(description,''))
+	•	Queries: cap limit (max 100), default 24; always order by created_at desc; paginate with limit/offset.
+
+F) Logging & privacy
+	•	Add lightweight request logging (pino/winston) at INFO; redact Authorization headers and cookies.
+	•	Prefix log lines with route name; include user id/role for listing writes.
+	•	Do not log PII (document contents, COA numbers).
+
+G) Security headers
+	•	Add helmet() with sane defaults (frameguard, noSniff, referrerPolicy, HSTS in prod).
+	•	Content-Security-Policy: restrict scripts to self and needed CDNs; block inline where possible.
+
+H) Health, seeds & startup
+	•	Keep /healthz trivial (return 200 “OK” immediately).
+	•	Ensure any data seeding / Excel import is disabled in production; behind a manual admin endpoint.
+	•	No long jobs at startup.
+
+I) All-listings browse & taxonomy-driven nav (sanity)
+	•	GET /api/listings should, by default, return only status='live' listings across all categories to any authenticated user; drafts only with mine=true.
+	•	Trading menu items should be built from /api/taxonomy (+ an “All Listings” link), not hard-coded to Hemp/Cannabis.
+
+Deliverables / What I will check
+	•	/api/auth/me works; protected calls include credentials/token.
+	•	Creating a draft as a seller always succeeds (no 500s).
+	•	Wrong role → 403; unauthenticated → 401.
+	•	/api/taxonomy is cached and fast.
+	•	GET /api/listings returns live listings (any category) with pagination; indexes exist.
+	•	Response headers show gzip/Brotli, ETag, and security headers.
+	•	No mock/seed data runs at startup.
+	•	/ still serves the SPA; /healthz returns instantly.
+
+Make these changes in the current codebase only; keep deployment settings intact.

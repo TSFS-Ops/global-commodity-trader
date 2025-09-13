@@ -1,0 +1,141 @@
+let’s fix just this one thing: buyers upload two documents once, they show up in the repository, and they’re never asked again unless expired or missing.
+Below is a clean, copy-paste ticket/prompt you can give your Replit dev. It’s safe (small, staged, feature-flagged) and won’t break your live site.
+
+⸻
+
+Ticket: Buyer documents — “upload once, reuse everywhere” (stop repeat prompts)
+
+Summary (plain English)
+	•	Buyers are asked to upload two documents.
+	•	After upload, the docs don’t appear in Document Repository / Management.
+	•	Because the app doesn’t “see” them, buyers are asked again every time.
+We need a simple, reliable system: save the docs, show them in the repository, and reuse them so the buyer is not re-prompted.
+
+Guardrails (to avoid outages)
+	•	Ship behind a flag: FEATURE_BUYER_DOCS=on (in Deploy env).
+	•	Use “IF NOT EXISTS” migrations only; startup should not crash if something is missing (log a warning, keep site up).
+	•	No routing/hosting changes; client + API only.
+
+⸻
+
+What “done” looks like (policy)
+	•	Ask for the two buyer documents once (ID + Proof of Address, or your chosen pair).
+	•	After successful upload, docs immediately appear in Repository.
+	•	From that point, the app does not prompt again unless a doc is expired or explicitly required and missing.
+	•	Prompt at first high-value moment (e.g., when contacting a seller / placing an order), not constantly.
+
+⸻
+
+Backend (source of truth)
+
+1) Data model (add if missing; use IF NOT EXISTS)
+
+Create a unified documents table for buyers:
+	•	id PK
+	•	user_id (buyer)
+	•	role TEXT default 'buyer'
+	•	doc_type TEXT (e.g., id_doc, proof_of_address)
+	•	status TEXT default 'uploaded' (uploaded|verified|expired|rejected)
+	•	storage_url TEXT
+	•	checksum TEXT NULL (optional, to dedupe)
+	•	uploaded_at TIMESTAMPTZ default now()
+	•	verified_at TIMESTAMPTZ NULL
+	•	expires_at TIMESTAMPTZ NULL
+
+Migration must be idempotent (IF NOT EXISTS) to avoid deploy crashes.
+
+2) Upload endpoint (must write the DB row)
+	•	POST /api/buyer/docs
+	•	Accepts: doc_type, file (your current upload mechanism).
+	•	On success:
+	1.	Store file (same bucket/prefix you list from).
+	2.	Insert a row into documents with user_id, role='buyer', doc_type, status='uploaded', storage_url, timestamps.
+	3.	Return the full row JSON.
+
+3) List endpoint (repository)
+	•	GET /api/buyer/docs
+	•	Returns all docs for current user (buyer), default filter status IN ('uploaded','verified','expired').
+	•	Support ?status=verified if you want a filter, but don’t default to it.
+
+4) Profile flag (single truth everyone uses)
+	•	Extend /api/auth/me (or equivalent) with:
+	•	has_required_buyer_docs: boolean
+	•	buyer_doc_status: "missing" | "uploaded" | "verified" | "expired" | "partial"
+	•	missing_buyer_doc_types: string[]
+	•	Compute server-side:
+	•	Gather buyer docs from documents table.
+	•	Required set = {id_doc, proof_of_address} (adjust to your two).
+	•	verified if both present and not expired (if you use expires_at).
+	•	uploaded if present but not yet verified.
+	•	missing or partial accordingly.
+
+5) Environment alignment
+	•	Ensure the upload service and the repository use the same bucket/prefix and the same database. Put them in env vars (e.g., DOCS_BUCKET, DOCS_PREFIX) and use the same values for both endpoints.
+
+⸻
+
+Frontend (simple, non-blocking UX)
+
+1) Document Repository page
+	•	Calls GET /api/buyer/docs on mount.
+	•	Shows rows immediately after a successful upload (see 2.2 below).
+
+2) Upload flow (modal or page)
+	•	On successful POST /api/buyer/docs, do two refetches:
+	1.	GET /api/buyer/docs → repository updates immediately.
+	2.	GET /api/auth/me → has_required_buyer_docs flips to true.
+	•	Show a small success toast (“Document received — verification may take up to X hours”).
+
+3) When to prompt
+	•	Check has_required_buyer_docs when the buyer:
+	•	tries to contact a seller / place an order (first real value moment).
+	•	If true: no prompt.
+	•	If false: show one modal listing the missing doc types with upload buttons. After both uploads complete, refetch profile; don’t prompt again.
+
+4) Never gate on stale client state
+	•	The decision to prompt must rely only on the server field has_required_buyer_docs.
+	•	Do not infer from localStorage or from the presence of files in the UI.
+
+⸻
+
+Temporary unblocking (while backend lands)
+	•	If this is blocking buyers today, make the current prompt non-blocking (banner only) and move enforcement to the moment they contact a seller. Remove repeat prompts during listing/browsing.
+
+⸻
+
+QA (5 quick checks)
+	1.	Upload → appears
+	•	Upload the two buyer docs; they appear in Repository within 2 seconds (list refetch).
+	2.	Profile flips
+	•	Call /api/auth/me → has_required_buyer_docs=true, buyer_doc_status="uploaded" or "verified".
+	3.	No repeat prompt
+	•	Navigate away, sign out/in, try contacting a seller → no prompt (unless a doc is expired/missing).
+	4.	Expiry (if used)
+	•	Mark one doc expired; Repository shows it; buyer is prompted only for the expired doc.
+	5.	Wrong bucket guard
+	•	Upload returns a URL; Repository lists the same bucket/prefix. If not, fix env so both endpoints match.
+
+⸻
+
+Logging (helps us diagnose if it ever regresses)
+	•	Upload success: log {user_id, doc_type, document_id, storage_url}.
+	•	Repository list: log {user_id, count, statuses}.
+	•	Profile compute: log {user_id, has_required_buyer_docs, buyer_doc_status}.
+
+⸻
+
+Acceptance criteria (sign-off)
+	•	Buyers upload the two documents once; they appear in Repository and persist across sessions.
+	•	has_required_buyer_docs becomes the only gate; no repeat prompts afterward.
+	•	Prompt reappears only for explicit missing/expired docs.
+	•	No deploy crashes; feature is behind FEATURE_BUYER_DOCS.
+
+⸻
+
+One-line fallback (if you must unstick today)
+
+Until the server flag is live, disable the hard prompt at listing/interaction start and show a banner instead:
+
+“Upload your ID and Proof of Address once to proceed faster next time.”
+
+— Then flip back to the server-driven gate when has_required_buyer_docs ships.

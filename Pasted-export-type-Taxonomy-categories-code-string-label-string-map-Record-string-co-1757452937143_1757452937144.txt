@@ -1,0 +1,43 @@
+export type Taxonomy = {
+  categories: { code: string; label: string }[];
+  map: Record<string, { code: string; label: string }[]>;
+  labelToCode: Record<string, string>;
+};
+
+const C = (code: string, label: string) => ({ code, label });
+
+export const TAXONOMY: Taxonomy = {
+  categories: [
+    C("cannabis-raw",       "Cannabis – Raw Plant Material"),
+    C("cannabis-extracts",  "Cannabis – Extracts & Concentrates"),
+    C("cannabis-infused",   "Cannabis – Infused Products"),
+    C("cannabis-medical",   "Cannabis – Medical & Pharma"),
+    C("cannabis-cpg",       "Cannabis – Consumer Packaged Goods"),
+    C("hemp-industrial",    "Hemp – Industrial Hemp"),
+    C("wellness-lifestyle", "Wellness & Lifestyle"),
+    C("byproducts-secondary","Byproducts & Secondary"),
+    C("tech-ancillary",     "Tech & Ancillary"),
+  ],
+  map: {
+    "cannabis-raw":      [C("flower-bud","Flower/Bud"), C("trim-shake","Trim & Shake")],
+    "cannabis-extracts": [C("solvent-based","Solvent-based"), C("solventless","Solventless"), C("specialty-concentrates","Specialty Concentrates")],
+    "cannabis-infused":  [C("edibles","Edibles"), C("sublinguals","Sublinguals"), C("topicals-transdermals","Topicals & Transdermals")],
+    "cannabis-medical":  [C("prescription-grade","Prescription-grade"), C("compounded-formulations","Compounded Formulations"), C("novel-cannabinoids","Novel Cannabinoids")],
+    "cannabis-cpg":      [C("pre-rolls","Pre-rolls"), C("vapes-cartridges","Vapes & Cartridges")],
+    "hemp-industrial":   [C("fibres-textiles","Fibres & Textiles"), C("hurds","Hurds"), C("seeds-oils","Seeds & Oils"), C("bioplastics","Bioplastics"), C("smokable-hemp","Smokable Hemp")],
+    "wellness-lifestyle":[C("cbd-wellness","CBD Wellness Products"), C("nutraceuticals","Nutraceuticals")],
+    "byproducts-secondary":[C("terpenes","Terpenes"), C("biomass-waste","Biomass Waste Streams"), C("carbon-credits","Carbon Credits")],
+    "tech-ancillary":    [C("cultivation-tech","Cultivation Tech"), C("post-harvest-equip","Post-Harvest Equipment"), C("testing-compliance","Testing & Compliance"), C("packaging","Packaging")]
+  },
+  labelToCode: {}
+};
+
+// Build a label-to-code index (case/space/emoji tolerant)
+for (const {code, label} of TAXONOMY.categories) {
+  TAXONOMY.labelToCode[label.toLowerCase()] = code;
+}
+for (const [catCode, subs] of Object.entries(TAXONOMY.map)) {
+  for (const {code, label} of subs) {
+    TAXONOMY.labelToCode[label.toLowerCase()] = code;
+  }
+}

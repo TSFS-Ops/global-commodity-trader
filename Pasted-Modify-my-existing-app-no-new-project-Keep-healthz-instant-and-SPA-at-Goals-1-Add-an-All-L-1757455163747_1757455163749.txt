@@ -1,0 +1,34 @@
+Modify my existing app (no new project). Keep /healthz instant and SPA at /.
+
+Goals
+	1.	Add an All Listings browse page and API that returns all live listings (any category) to any authenticated user (buyer, seller, broker, admin). Drafts stay private to their owner.
+	2.	Make the Trading menu dynamic from our taxonomy (/api/taxonomy) so categories shown = taxonomy categories (Cannabis groups, Hemp, Wellness, Byproducts, Tech, etc.), plus an All item at the top.
+
+Server
+	•	Create/confirm GET /api/listings with filters: status?, category_code?, q?, limit?=24, offset?=0.
+	•	Default behaviour: return only status='live' listings across all categories.
+	•	If mine=true, return the caller’s listings (drafts & live) filtered by owner_user_id=req.user.id.
+	•	Allow roles buyer | seller | broker | admin to GET; no role restriction beyond auth.
+	•	Always exclude someone else’s drafts (unless admin).
+	•	In the response, include both category_code and a computed category_label (looked up from taxonomy) for display.
+
+Client
+	•	Add a new route/page /listings that calls GET /api/listings and renders a grid with simple filters: Category (from taxonomy), Sub-category (dependent), Region, and a search box.
+	•	Update the Trading menu:
+	•	Replace the hard-coded “Hemp / Cannabis” with: All Listings, then each taxonomy category (first 6 as direct items; put a “More…” link to a category index if needed).
+	•	Each category menu item links to /listings?category_code=<code>.
+	•	Both buyers and sellers see the same browse pages. Keep create/edit actions hidden for buyers.
+	•	Search page should default to “all categories” unless the user chooses one.
+
+Acceptance
+	•	Visiting /listings shows all live listings regardless of category.
+	•	Toggling a category filter changes the query to /api/listings?category_code=….
+	•	Logged-in buyers and sellers can view the same listings; only owners see their drafts under mine=true.
+	•	The Trading menu shows All Listings plus the taxonomy-driven categories (not just Hemp/Cannabis).
+	•	/ and /healthz unchanged.
+
+⸻
+
+Optional code you can drop in
+
+Server – GET /api/listings (filters + visibility)

@@ -1,0 +1,38 @@
+You are modifying my existing trading-platform project. Do not scaffold a new app. Keep the current behaviour: the SPA must keep serving at /, and /healthz must return instantly. Do not run any heavy jobs at startup.
+
+Goal: Make the Create Listing flow category-driven and logical:
+	1.	Step 1 = Category (must be chosen before anything dependent).
+	2.	Step 2 = Sub-category (derivatives that depend on the chosen Category).
+	3.	Listing can be saved as Draft at any time with partial information.
+
+Taxonomy to implement (two levels):
+	•	Cannabis – Raw Plant Material: Flower/Bud; Trim & Shake
+	•	Cannabis – Extracts & Concentrates: Solvent-based; Solventless; Specialty Concentrates
+	•	Cannabis – Infused Products: Edibles; Sublinguals; Topicals & Transdermals
+	•	Cannabis – Medical & Pharma: Prescription-grade; Compounded Formulations; Novel Cannabinoids
+	•	Cannabis – Consumer Packaged Goods: Pre-rolls; Vapes & Cartridges
+	•	Hemp – Industrial Hemp: Fibres & Textiles; Hurds; Seeds & Oils; Bioplastics; Smokable Hemp
+	•	Wellness & Lifestyle: CBD Wellness Products; Nutraceuticals
+	•	Byproducts & Secondary: Terpenes; Biomass Waste Streams; Carbon Credits
+	•	Tech & Ancillary: Cultivation Tech; Post-Harvest Equipment; Testing & Compliance; Packaging
+
+What to change:
+	1.	Backend (no code here—describe & implement):
+	•	Ensure the listings record stores Category and Sub-category (both allowed to be empty for drafts). If any NOT NULL constraints exist on these fields, relax them so drafts can save.
+	•	Add a lightweight way for the frontend to fetch the taxonomy (e.g., a tiny endpoint that returns the above structure). Keep it in memory (fast) and behind try/catch.
+	•	Soft-validate: if a request includes a Sub-category, it must belong to the chosen Category; otherwise respond with a clear 400 error. Missing values are allowed for drafts.
+	2.	Frontend (behavioural changes only):
+	•	Reorder the Create Listing wizard so Category is the first question.
+	•	Sub-category must stay disabled until a Category is chosen. When Category changes, clear/reset the Sub-category and repopulate its options.
+	•	Show a Save as Draft action on every step; saving should work even if Category/Sub-category are empty.
+	•	In listing cards and details, display the selected Category and Sub-category when present; if absent, show a friendly placeholder like “Not provided yet”.
+	3.	Validation & UX copy:
+	•	Inline helper text: “Choose a Category to see relevant sub-categories.”
+	•	If the user somehow selects a Sub-category that doesn’t match the Category (e.g., via stale state), show a small inline error and reset the Sub-category.
+	•	Do not block drafts; only enforce any stricter requirements at Publish (existing publish rules remain as they are).
+	4.	Backwards compatibility:
+	•	Existing listings without Category/Sub-category must continue to load and edit normally. No migrations should break startup.
+	5.	Non-functional constraints:
+	•	Keep /healthz instant.
+	•	Do not introduce long operations on server boot.
+	•	Wrap any new handlers with safe error handling; never crash the server if the taxonomy can’t load—return an empty set and a helpful message.

@@ -1,0 +1,520 @@
+{
+  "timestamp": "2025-08-14T11-28-32-038Z",
+  "config": {
+    "dryRun": true,
+    "purgeExisting": false,
+    "verbose": false,
+    "maxRows": null
+  },
+  "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx",
+  "sheetName": "Sheet1",
+  "columnMappings": [
+    "✓ Excel column \"CLIENT\" -> field counterpartyName",
+    "✓ Excel column \"CONTACT\" -> field contactInfo",
+    "✓ Excel column \"GROWER\" -> field counterpartyName",
+    "✓ Excel column \"QUANTITY\" -> field quantityAvailable",
+    "✓ Excel column \"%THC\" -> field qualitySpecs",
+    "? Excel column \"PICS & COAs\" -> metadata (unmapped)",
+    "? Excel column \"SIGNED CONTRACT\" -> metadata (unmapped)",
+    "✓ Excel column \"BID/OFFER\" -> field pricePerUnit",
+    "✓ Excel column \"STATUS\" -> field status"
+  ],
+  "unmappedColumns": [
+    "PICS & COAs",
+    "SIGNED CONTRACT",
+    "STRAIN"
+  ],
+  "missingCriticalFields": [],
+  "summary": {
+    "totalRows": 23,
+    "processedRows": 16,
+    "validRows": 16,
+    "errorRows": 7,
+    "warningRows": 0,
+    "duplicates": 15,
+    "criticalFieldsIssues": false
+  },
+  "errors": [
+    {
+      "row": 5,
+      "data": {
+        "CLIENT": "www.greenshepherd.com.au"
+      },
+      "errors": [
+        "Invalid quantity: 0"
+      ]
+    },
+    {
+      "row": 7,
+      "data": {
+        "CLIENT": "Chris (ex-CEO Lyphe Group)indoor & greenhouse – non GMP",
+        "%THC": "25%+",
+        "PICS & COAs": "Not sent",
+        "SIGNED CONTRACT": "Bid (no contract)",
+        "BID/OFFER": "1,5 cad for greenhouse; 2,25 cad for indoor"
+      },
+      "errors": [
+        "Invalid quantity: 0"
+      ]
+    },
+    {
+      "row": 8,
+      "data": {
+        "%THC": "Package: 500g/1kg/2kg.",
+        "SIGNED CONTRACT": "Offer",
+        "BID/OFFER": "2,35 cad",
+        "STATUS": "Pending order"
+      },
+      "errors": [
+        "Invalid quantity: 0"
+      ]
+    },
+    {
+      "row": 9,
+      "data": {
+        "%THC": "Nitrogen double walled cardboard; loaded pallet",
+        "SIGNED CONTRACT": "May ‘25 delivery "
+      },
+      "errors": [
+        "Invalid quantity: 0"
+      ]
+    },
+    {
+      "row": 10,
+      "data": {
+        "CLIENT": "Tibor & Tasa – IUVOGermany – medrec distributors"
+      },
+      "errors": [
+        "Invalid quantity: 0"
+      ]
+    },
+    {
+      "row": 11,
+      "data": {
+        "CLIENT": "Www.iuvo-therapeutics.com",
+        "GROWER": "www.iuvo-theurapeutics.com"
+      },
+      "errors": [
+        "Invalid quantity: 0"
+      ]
+    },
+    {
+      "row": 12,
+      "data": {
+        "CLIENT": "Dean Walt – Cloudco",
+        "CONTACT": "Canadian looking for quality SA product for Europe"
+      },
+      "errors": [
+        "Invalid quantity: 0"
+      ]
+    }
+  ],
+  "warnings": [
+    {
+      "row": 21,
+      "data": {
+        "metadata": {
+          "STRAIN": "Blunicorn",
+          "PICS & COAs": "Yes"
+        },
+        "counterpartyName": "Wellness",
+        "quantityAvailable": 130,
+        "qualitySpecs": 23.3,
+        "unit": "kg",
+        "pricePerUnit": 0,
+        "currency": "ZAR",
+        "importKey": "wellness||130|0"
+      },
+      "warnings": [
+        "Duplicate import key - will be upserted"
+      ]
+    }
+  ],
+  "sampleData": [
+    {
+      "metadata": {
+        "PICS & COAs": "x",
+        "SIGNED CONTRACT": "x"
+      },
+      "counterpartyName": "Alchemy",
+      "contactInfo": "Alex",
+      "quantityAvailable": 1000,
+      "qualitySpecs": "28-32",
+      "pricePerUnit": 30000,
+      "status": "Pending order",
+      "unit": "kg",
+      "currency": "ZAR",
+      "importKey": "alchemy||1000|30000",
+      "sourceRow": 1,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    },
+    {
+      "metadata": {
+        "PICS & COAs": "x",
+        "SIGNED CONTRACT": "x"
+      },
+      "contactInfo": "Alex & Gilbert",
+      "counterpartyName": "Alchemy & Wellness",
+      "quantityAvailable": 350,
+      "qualitySpecs": "28-32",
+      "pricePerUnit": 30000,
+      "status": "Pending order",
+      "unit": "kg",
+      "currency": "ZAR",
+      "importKey": "alchemy & wellness||350|30000",
+      "sourceRow": 2,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    },
+    {
+      "metadata": {
+        "PICS & COAs": "x",
+        "SIGNED CONTRACT": "x"
+      },
+      "counterpartyName": "Wellness",
+      "contactInfo": "Gilbert",
+      "quantityAvailable": 350,
+      "qualitySpecs": "28-32",
+      "pricePerUnit": 30000,
+      "status": "Pending order",
+      "unit": "kg",
+      "currency": "ZAR",
+      "importKey": "wellness||350|30000",
+      "sourceRow": 3,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    },
+    {
+      "metadata": {
+        "PICS & COAs": "x",
+        "SIGNED CONTRACT": "x"
+      },
+      "counterpartyName": "Sativa Grow",
+      "contactInfo": "Grant",
+      "quantityAvailable": 20,
+      "qualitySpecs": "14-18",
+      "pricePerUnit": 22500,
+      "status": "Pending order",
+      "unit": "kg",
+      "currency": "ZAR",
+      "importKey": "sativa grow||20|22500",
+      "sourceRow": 4,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    },
+    {
+      "metadata": {
+        "STRAIN": "4 strains – up to grower",
+        "PICS & COAs": "not sent",
+        "SIGNED CONTRACT": "no"
+      },
+      "counterpartyName": "Gilbert/Alchemy",
+      "contactInfo": "Alex",
+      "quantityAvailable": 500,
+      "qualitySpecs": "24 – 27",
+      "status": "Pending order",
+      "unit": "kg",
+      "pricePerUnit": 0,
+      "currency": "ZAR",
+      "importKey": "gilbert/alchemy||500|0",
+      "sourceRow": 6,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    },
+    {
+      "metadata": {},
+      "counterpartyName": "tnexus888@gmail.com",
+      "contactInfo": "Thomas?",
+      "quantityAvailable": 500,
+      "qualitySpecs": "26 – 32",
+      "pricePerUnit": 2,
+      "unit": "kg",
+      "currency": "USD",
+      "importKey": "tnexus888@gmail.com||500|2",
+      "sourceRow": 13,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    },
+    {
+      "metadata": {
+        "STRAIN": "Green Gelato",
+        "PICS & COAs": "Yes",
+        "SIGNED CONTRACT": "Yes"
+      },
+      "counterpartyName": "Morwamax (Africabud)",
+      "contactInfo": "Marianne Brown",
+      "quantityAvailable": 100,
+      "qualitySpecs": "24 - 32",
+      "status": "Pending order",
+      "unit": "kg",
+      "pricePerUnit": 0,
+      "currency": "ZAR",
+      "importKey": "morwamax (africabud)||100|0",
+      "sourceRow": 14,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    },
+    {
+      "metadata": {},
+      "counterpartyName": "Batch:",
+      "quantityAvailable": 1,
+      "unit": "kg",
+      "pricePerUnit": 0,
+      "currency": "ZAR",
+      "importKey": "batch:||1|0",
+      "sourceRow": 15,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    },
+    {
+      "metadata": {},
+      "quantityAvailable": 4,
+      "unit": "kg",
+      "pricePerUnit": 0,
+      "currency": "ZAR",
+      "importKey": "||4|0",
+      "sourceRow": 16,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    },
+    {
+      "metadata": {},
+      "quantityAvailable": 7,
+      "unit": "kg",
+      "pricePerUnit": 0,
+      "currency": "ZAR",
+      "importKey": "||7|0",
+      "sourceRow": 17,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    }
+  ],
+  "allProcessedData": [
+    {
+      "metadata": {
+        "PICS & COAs": "x",
+        "SIGNED CONTRACT": "x"
+      },
+      "counterpartyName": "Alchemy",
+      "contactInfo": "Alex",
+      "quantityAvailable": 1000,
+      "qualitySpecs": "28-32",
+      "pricePerUnit": 30000,
+      "status": "Pending order",
+      "unit": "kg",
+      "currency": "ZAR",
+      "importKey": "alchemy||1000|30000",
+      "sourceRow": 1,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    },
+    {
+      "metadata": {
+        "PICS & COAs": "x",
+        "SIGNED CONTRACT": "x"
+      },
+      "contactInfo": "Alex & Gilbert",
+      "counterpartyName": "Alchemy & Wellness",
+      "quantityAvailable": 350,
+      "qualitySpecs": "28-32",
+      "pricePerUnit": 30000,
+      "status": "Pending order",
+      "unit": "kg",
+      "currency": "ZAR",
+      "importKey": "alchemy & wellness||350|30000",
+      "sourceRow": 2,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    },
+    {
+      "metadata": {
+        "PICS & COAs": "x",
+        "SIGNED CONTRACT": "x"
+      },
+      "counterpartyName": "Wellness",
+      "contactInfo": "Gilbert",
+      "quantityAvailable": 350,
+      "qualitySpecs": "28-32",
+      "pricePerUnit": 30000,
+      "status": "Pending order",
+      "unit": "kg",
+      "currency": "ZAR",
+      "importKey": "wellness||350|30000",
+      "sourceRow": 3,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    },
+    {
+      "metadata": {
+        "PICS & COAs": "x",
+        "SIGNED CONTRACT": "x"
+      },
+      "counterpartyName": "Sativa Grow",
+      "contactInfo": "Grant",
+      "quantityAvailable": 20,
+      "qualitySpecs": "14-18",
+      "pricePerUnit": 22500,
+      "status": "Pending order",
+      "unit": "kg",
+      "currency": "ZAR",
+      "importKey": "sativa grow||20|22500",
+      "sourceRow": 4,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    },
+    {
+      "metadata": {
+        "STRAIN": "4 strains – up to grower",
+        "PICS & COAs": "not sent",
+        "SIGNED CONTRACT": "no"
+      },
+      "counterpartyName": "Gilbert/Alchemy",
+      "contactInfo": "Alex",
+      "quantityAvailable": 500,
+      "qualitySpecs": "24 – 27",
+      "status": "Pending order",
+      "unit": "kg",
+      "pricePerUnit": 0,
+      "currency": "ZAR",
+      "importKey": "gilbert/alchemy||500|0",
+      "sourceRow": 6,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    },
+    {
+      "metadata": {},
+      "counterpartyName": "tnexus888@gmail.com",
+      "contactInfo": "Thomas?",
+      "quantityAvailable": 500,
+      "qualitySpecs": "26 – 32",
+      "pricePerUnit": 2,
+      "unit": "kg",
+      "currency": "USD",
+      "importKey": "tnexus888@gmail.com||500|2",
+      "sourceRow": 13,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    },
+    {
+      "metadata": {
+        "STRAIN": "Green Gelato",
+        "PICS & COAs": "Yes",
+        "SIGNED CONTRACT": "Yes"
+      },
+      "counterpartyName": "Morwamax (Africabud)",
+      "contactInfo": "Marianne Brown",
+      "quantityAvailable": 100,
+      "qualitySpecs": "24 - 32",
+      "status": "Pending order",
+      "unit": "kg",
+      "pricePerUnit": 0,
+      "currency": "ZAR",
+      "importKey": "morwamax (africabud)||100|0",
+      "sourceRow": 14,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    },
+    {
+      "metadata": {},
+      "counterpartyName": "Batch:",
+      "quantityAvailable": 1,
+      "unit": "kg",
+      "pricePerUnit": 0,
+      "currency": "ZAR",
+      "importKey": "batch:||1|0",
+      "sourceRow": 15,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    },
+    {
+      "metadata": {},
+      "quantityAvailable": 4,
+      "unit": "kg",
+      "pricePerUnit": 0,
+      "currency": "ZAR",
+      "importKey": "||4|0",
+      "sourceRow": 16,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    },
+    {
+      "metadata": {},
+      "quantityAvailable": 7,
+      "unit": "kg",
+      "pricePerUnit": 0,
+      "currency": "ZAR",
+      "importKey": "||7|0",
+      "sourceRow": 17,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    },
+    {
+      "metadata": {},
+      "quantityAvailable": 8,
+      "unit": "kg",
+      "pricePerUnit": 0,
+      "currency": "ZAR",
+      "importKey": "||8|0",
+      "sourceRow": 18,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    },
+    {
+      "metadata": {
+        "SIGNED CONTRACT": "Yes"
+      },
+      "counterpartyName": "Wellness",
+      "contactInfo": "Gilbert Richmond",
+      "quantityAvailable": 130,
+      "unit": "kg",
+      "pricePerUnit": 0,
+      "currency": "ZAR",
+      "importKey": "wellness||130|0",
+      "sourceRow": 19,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    },
+    {
+      "metadata": {
+        "STRAIN": "Blunicorn",
+        "PICS & COAs": "Yes"
+      },
+      "counterpartyName": "Wellness",
+      "quantityAvailable": 100,
+      "qualitySpecs": 26.3,
+      "unit": "kg",
+      "pricePerUnit": 0,
+      "currency": "ZAR",
+      "importKey": "wellness||100|0",
+      "sourceRow": 20,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    },
+    {
+      "metadata": {
+        "STRAIN": "Blunicorn",
+        "PICS & COAs": "Yes"
+      },
+      "counterpartyName": "Wellness",
+      "quantityAvailable": 130,
+      "qualitySpecs": 23.3,
+      "unit": "kg",
+      "pricePerUnit": 0,
+      "currency": "ZAR",
+      "importKey": "wellness||130|0",
+      "sourceRow": 21,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    },
+    {
+      "metadata": {
+        "PICS & COAs": "Not ",
+        "SIGNED CONTRACT": "no"
+      },
+      "counterpartyName": "Omri",
+      "contactInfo": "Alex",
+      "quantityAvailable": 150,
+      "qualitySpecs": 26,
+      "unit": "kg",
+      "pricePerUnit": 0,
+      "currency": "ZAR",
+      "importKey": "omri||150|0",
+      "sourceRow": 22,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    },
+    {
+      "metadata": {
+        "PICS & COAs": "Not Yet",
+        "SIGNED CONTRACT": "No"
+      },
+      "counterpartyName": "Alchemy",
+      "contactInfo": "Alex",
+      "quantityAvailable": 30000,
+      "qualitySpecs": "0.6 THC / Min.8% CBD",
+      "pricePerUnit": 1,
+      "status": "Pending Order",
+      "unit": "kg",
+      "currency": "USD",
+      "importKey": "alchemy||30000|1",
+      "sourceRow": 23,
+      "sourceFile": "attached_assets/Izenzo Trading Platfrom V1_1755168960137.xlsx"
+    }
+  ]
+}

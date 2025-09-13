@@ -1,0 +1,77 @@
+{
+  "timestamp": "2025-08-14T11:29:23.850Z",
+  "imported": 7,
+  "source": "enhanced_excel_import",
+  "listings": [
+    {
+      "counterpartyName": "Alchemy",
+      "quantityAvailable": 1000,
+      "unit": "kg",
+      "pricePerUnit": 30000,
+      "currency": "ZAR",
+      "qualitySpecs": "28-32",
+      "contactInfo": "Alex",
+      "status": "pending"
+    },
+    {
+      "counterpartyName": "Alchemy & Wellness",
+      "quantityAvailable": 350,
+      "unit": "kg",
+      "pricePerUnit": 30000,
+      "currency": "ZAR",
+      "qualitySpecs": "28-32",
+      "contactInfo": "Alex & Gilbert",
+      "status": "pending"
+    },
+    {
+      "counterpartyName": "Wellness",
+      "quantityAvailable": 350,
+      "unit": "kg",
+      "pricePerUnit": 30000,
+      "currency": "ZAR",
+      "qualitySpecs": "28-32",
+      "contactInfo": "Gilbert",
+      "status": "pending"
+    },
+    {
+      "counterpartyName": "Sativa Grow",
+      "quantityAvailable": 20,
+      "unit": "kg",
+      "pricePerUnit": 22500,
+      "currency": "ZAR",
+      "qualitySpecs": "14-18",
+      "contactInfo": "",
+      "status": "pending"
+    },
+    {
+      "counterpartyName": "Gilbert/Alchemy",
+      "quantityAvailable": 500,
+      "unit": "kg",
+      "pricePerUnit": 25000,
+      "currency": "ZAR",
+      "qualitySpecs": "24 – 27",
+      "contactInfo": "Gilbert",
+      "status": "pending"
+    },
+    {
+      "counterpartyName": "tnexus888@gmail.com",
+      "quantityAvailable": 500,
+      "unit": "kg",
+      "pricePerUnit": 2000,
+      "currency": "USD",
+      "qualitySpecs": "26 – 32",
+      "contactInfo": "",
+      "status": "active"
+    },
+    {
+      "counterpartyName": "Morwamax (Africabud)",
+      "quantityAvailable": 100,
+      "unit": "kg",
+      "pricePerUnit": 25000,
+      "currency": "ZAR",
+      "qualitySpecs": "24 - 32",
+      "contactInfo": "",
+      "status": "active"
+    }
+  ]
+}

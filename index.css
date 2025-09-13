@@ -1,0 +1,254 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  /* Cannabis-themed gradients */
+  .cannabis-gradient {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%);
+  }
+  
+  .hemp-gradient {
+    background: linear-gradient(135deg, #84cc16 0%, #65a30d 50%, #4d7c0f 100%);
+  }
+  
+  .cannabis-glow {
+    box-shadow: 0 4px 20px rgba(34, 197, 94, 0.25);
+  }
+  
+  .hemp-glow {
+    box-shadow: 0 4px 20px rgba(132, 204, 22, 0.25);
+  }
+
+  /* Modern card animations */
+  .card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .card-hover:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  }
+
+  .glass {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .glass-dark {
+    background: rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .glass-card {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  }
+  
+  .glass-nav {
+    background: linear-gradient(90deg, rgba(23, 60, 30, 0.9) 0%, rgba(21, 128, 61, 0.85) 100%);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 20px rgba(23, 60, 30, 0.2);
+  }
+  
+  .glass-button {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+  }
+  
+  .glass-button:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  }
+  
+  /* Micro-interaction classes */
+  .bounce-in {
+    animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+  
+  .fade-in-up {
+    animation: fadeInUp 0.5s ease-out;
+  }
+  
+  .pulse-success {
+    animation: pulseSuccess 0.6s ease-out;
+  }
+  
+  @keyframes bounceIn {
+    0% { transform: scale(0.3); opacity: 0; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  
+  @keyframes fadeInUp {
+    0% { transform: translateY(20px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+  
+  @keyframes pulseSuccess {
+    0% { transform: scale(1); background-color: rgb(34, 197, 94); }
+    50% { transform: scale(1.05); background-color: rgb(22, 163, 74); }
+    100% { transform: scale(1); background-color: rgb(34, 197, 94); }
+  }
+  
+  .glass-input {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .glass-input:focus {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+}
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 144 25% 20%;
+  --muted: 72 45% 97%;
+  --muted-foreground: 144 15% 35%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 144 25% 20%;
+  --card: 0 0% 100%;
+  --card-foreground: 144 25% 20%;
+  --border: 72 20% 90%;
+  --input: 72 20% 90%;
+  --primary: 144 30% 17%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 72 60% 70%;
+  --secondary-foreground: 144 30% 17%;
+  --accent: 72 60% 70%;
+  --accent-foreground: 144 30% 17%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 60 9.1% 97.8%;
+  --ring: 72 60% 70%;
+  --radius: 0.5rem;
+  
+  --chart-1: 144 30% 17%;
+  --chart-2: 72 60% 70%;
+  --chart-3: 120 40% 50%;
+  --chart-4: 90 50% 60%;
+  --chart-5: 25 80% 60%;
+  
+  --sidebar-background: 140 35% 27%;
+  --sidebar-foreground: 0 0% 98%;
+  --sidebar-primary: 163 49% 60%;
+  --sidebar-primary-foreground: 140 35% 27%;
+  --sidebar-accent: 0 0% 98%;
+  --sidebar-accent-foreground: 0 0% 98%;
+  --sidebar-border: 147 30% 30%;
+  --sidebar-ring: 163 49% 60%;
+}
+
+.dark {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --primary: 140 35% 27%;
+  --primary-foreground: 211 100% 99%;
+  --secondary: 148 35% 27%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 163 49% 45%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 147 30% 30%;
+  
+  --chart-1: 140 50% 40%;
+  --chart-2: 163 49% 60%;
+  --chart-3: 196 65% 39%;
+  --chart-4: 200 65% 50%;
+  --chart-5: 25 80% 60%;
+  
+  --sidebar-background: 140 35% 27%;
+  --sidebar-foreground: 0 0% 98%;
+  --sidebar-primary: 163 49% 60%;
+  --sidebar-primary-foreground: 140 35% 27%;
+  --sidebar-accent: 0 0% 98%;
+  --sidebar-accent-foreground: 0 0% 98%;
+  --sidebar-border: 147 30% 30%;
+  --sidebar-ring: 163 49% 60%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+.trend-up {
+  @apply text-green-600;
+}
+
+.trend-down {
+  @apply text-red-600;
+}
+
+/* Simple styles for minimal ListingsPage component */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.card .muted {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.card .title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #1e293b;
+}
+
+.card > div {
+  margin-bottom: 0.5rem;
+  color: #475569;
+}

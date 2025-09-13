@@ -1,72 +1,44 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { readJson } from '../lib/safeJsonStore.js';
+import path from 'path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const SIGNALS_FILE = path.join(__dirname, '../data/signals.json');
+const signalsPath = path.join(process.cwd(), 'data', 'signals.json');
 
 export default {
   name: 'internalSignals',
-  
-  async fetchAndNormalize(token, criteria) {
+  fetchAndNormalize: async (token, criteria) => {
     try {
-      console.log('🔍 InternalSignals: Fetching signals with criteria:', criteria);
+      const signals = await readJson(signalsPath);
       
-      // Read signals from file
-      let signals = readJson(SIGNALS_FILE);
-      
-      // Filter by commodity (cannabis/hemp/cbd only)
+      // Filter by commodity allow-list
       const allowedCommodities = ['cannabis', 'hemp', 'cbd'];
-      signals = signals.filter(signal => 
+      let filtered = signals.filter(signal => 
         allowedCommodities.includes(signal.commodity)
       );
       
-      // Apply criteria filters
-      if (criteria.commodityType || criteria.productType) {
-        const requestedCommodity = (criteria.commodityType || criteria.productType).toLowerCase();
-        signals = signals.filter(signal => 
-          signal.commodity.includes(requestedCommodity)
+      // Filter by criteria
+      if (criteria.commodityType) {
+        filtered = filtered.filter(signal => 
+          signal.commodity.toLowerCase() === criteria.commodityType.toLowerCase()
         );
       }
       
-      // Filter by region
-      if (criteria.region || criteria.location) {
-        const location = (criteria.region || criteria.location).toLowerCase();
-        signals = signals.filter(signal => 
-          signal.region.toLowerCase().includes(location)
+      if (criteria.region) {
+        filtered = filtered.filter(signal => 
+          signal.region.toLowerCase().includes(criteria.region.toLowerCase())
         );
       }
       
-      // Filter by keyword/query
       if (criteria.query) {
         const queryLower = criteria.query.toLowerCase();
-        signals = signals.filter(signal =>
+        filtered = filtered.filter(signal =>
           signal.companyName.toLowerCase().includes(queryLower) ||
           signal.text.toLowerCase().includes(queryLower)
         );
       }
       
-      // Filter by price range if provided
-      if (criteria.priceMin != null || criteria.priceMax != null) {
-        signals = signals.filter(signal => {
-          if (signal.priceMin != null && criteria.priceMax != null) {
-            return signal.priceMin <= criteria.priceMax;
-          }
-          if (signal.priceMax != null && criteria.priceMin != null) {
-            return signal.priceMax >= criteria.priceMin;
-          }
-          return true; // Include signals without price info
-        });
-      }
-      
-      console.log(`✅ InternalSignals: Found ${signals.length} matching signals`);
-      
-      // Map to unified crawler format
-      const normalizedResults = signals.map(signal => ({
+      // Map to unified shape for search results
+      return filtered.map(signal => ({
         _type: 'signal',
-        id: `signal-${signal.id}`,
-        source: 'internalSignals',
         counterpartyId: signal.id,
         counterpartyName: signal.companyName,
         commodityType: signal.commodity,
@@ -75,36 +47,17 @@ export default {
         quantityAvailable: null,
         qualitySpecs: null,
         licenseStatus: null,
-        notes: signal.text,
-        
-        // Signal-specific fields
-        signalType: signal.kind,
-        signalSource: signal.source,
-        contact: signal.contact,
-        priceMin: signal.priceMin,
-        priceMax: signal.priceMax,
-        url: signal.url,
-        views: signal.views,
-        clicks: signal.clicks,
         createdAt: signal.createdAt,
-        
-        // Metadata
-        metadata: {
-          originalId: signal.id,
-          isSignal: true,
-          companyKey: signal.companyKey
-        },
-        
-        // Scoring for ranking (signals get lower base score than listings)
-        score: 30 + (signal.views || 0) * 0.1 + (signal.clicks || 0) * 0.5,
-        matchReason: 'Signal match from internal database'
+        // Additional signal-specific fields
+        signalKind: signal.kind,
+        signalText: signal.text,
+        views: signal.views,
+        clicks: signal.clicks
       }));
-      
-      return normalizedResults;
-      
     } catch (error) {
-      console.error('❌ InternalSignals connector error:', error);
-      throw new Error(`InternalSignals connector failed: ${error.message}`);
+      console.error('InternalSignals connector error:', error);
+      // Do NOT throw - return empty array on any error
+      return [];
     }
   }
 };

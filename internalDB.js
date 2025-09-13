@@ -1,15 +1,12 @@
 // Internal Database Connector - fetches cannabis/hemp listings from our own database
-const path = require('path');
-const fs = require('fs');
 
 // Import storage layer
-const storagePath = path.join(__dirname, '../server/storage.ts');
 let storage;
 
 async function getStorage() {
   if (!storage) {
     // Dynamic import for ES modules
-    const storageModule = await import('../server/storage.ts');
+    const storageModule = await import('../server/storage.js');
     storage = storageModule.storage;
   }
   return storage;

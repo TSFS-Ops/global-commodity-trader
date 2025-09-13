@@ -1,0 +1,1 @@
+import{a7 as s}from"./index-DE3WvtMD.js";async function l(n,r={},a=!0){const o=localStorage.getItem("token"),e={...r.headers||{},"Content-Type":"application/json"},t=s.getState().acting;return a&&t.mode==="seller"&&t.sellerId&&(e["X-Acting-For-Seller-Id"]=String(t.sellerId)),o&&(e.Authorization=`Bearer ${o}`),fetch(n,{credentials:"include",...r,headers:e})}export{l as a};
